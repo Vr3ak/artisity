@@ -2,6 +2,8 @@ import type { Config } from "tailwindcss";
 
 export default {
   darkMode: ["class"],
+  // Touch devices keep hover styles stuck after a tap
+  future: { hoverOnlyWhenSupported: true },
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -12,6 +14,15 @@ export default {
     extend: {
       colors: {
         background: "hsl(var(--background))",
+        nav: "hsl(var(--nav))",
+        scrim: "hsl(var(--scrim))",
+        // Brand palette for accents outside the semantic tokens
+        brand: {
+          cream: "#F9E6A8",
+          gold: "#F2A900",
+          orange: "#CC6F00",
+          brown: "#4D2A00",
+        },
         foreground: "hsl(var(--foreground))",
         card: {
           DEFAULT: "hsl(var(--card))",
@@ -24,6 +35,7 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          ink: "hsl(var(--primary-ink))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -51,6 +63,10 @@ export default {
           "4": "hsl(var(--chart-4))",
           "5": "hsl(var(--chart-5))",
         },
+      },
+      boxShadow: {
+        // Raised flow cards and the sticky save bar; color follows the theme
+        float: "0 24px 60px -20px hsl(var(--shadow))",
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -1,110 +1,128 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
+import { OAuthButtons } from "@/components/oauth-buttons";
+import { useAuthModal } from "@/components/auth-modal";
+import { AuthDivider, FormError } from "@/components/auth-parts";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+  Field,
+  FlowCard,
+  PasswordInput,
+  fieldClass,
+  pillClass,
+} from "@/components/flow";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function LoginForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+// Onboarded users are bounced from /onboarding to /; a first-time Google login lands in onboarding,
+// which asks for the role itself.
+const NEXT = "/onboarding";
+
+// Same card system as sign-up (after vgen.co)
+export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const modal = useAuthModal();
 
   const handleLogin = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const supabase = createClient();
     setIsLoading(true);
     setError(null);
-
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-      // Update this route to redirect to an authenticated route. The user already has an active session.
-      router.push("/protected");
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) {
+      setError(
+        error.code === "invalid_credentials"
+          ? "That email and password don't match. Check them, or reset your password."
+          : error.message,
+      );
       setIsLoading(false);
+      return;
     }
+    // In the modal, onboarded users stay on the page they were on
+    if (modal) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      if (profile?.role) return modal.close();
+    }
+    router.push(NEXT);
+    // Root layout's header is server-rendered; refresh so it shows the user
+    router.refresh();
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>
-            Enter your email below to login to your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <Link
-                    href="/auth/forgot-password"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Logging in..." : "Login"}
-              </Button>
-            </div>
-            <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <Link
-                href="/auth/sign-up"
-                className="underline underline-offset-4"
-              >
-                Sign up
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <FlowCard title="Welcome back">
+      <OAuthButtons
+        next={NEXT}
+        verb="Log in with"
+        showFacebook
+        buttonClassName={pillClass.oauth}
+      />
+      <AuthDivider />
+      <form onSubmit={handleLogin} className="flex flex-col gap-6">
+        <Field label="Email">
+          {(id) => (
+            <input
+              id={id}
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={fieldClass}
+            />
+          )}
+        </Field>
+        <div className="flex flex-col gap-2">
+          <Field label="Password">
+            {(id) => (
+              <PasswordInput
+                id={id}
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            )}
+          </Field>
+          {/* After the field in the DOM so Tab goes email → password → this link */}
+          <Link
+            href="/auth/forgot-password"
+            className="self-end text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </div>
+        <FormError message={error} />
+        <button
+          type="submit"
+          disabled={isLoading || !email || !password}
+          className={pillClass.final}
+        >
+          {isLoading ? "Logging in…" : "Log in"}
+        </button>
+      </form>
+      <p className="text-center text-sm text-muted-foreground">
+        New to Artisity?{" "}
+        <Link
+          href="/auth/sign-up"
+          replace
+          className="font-semibold text-foreground underline underline-offset-4"
+        >
+          Create an account
+        </Link>
+      </p>
+    </FlowCard>
   );
 }
