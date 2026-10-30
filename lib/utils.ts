@@ -82,14 +82,19 @@ export function contactHandle(raw: string, host: RegExp): string {
   return id ? `${path}?id=${id}` : path;
 }
 
-// Profile URLs for contact_methods handles (the DB stores bare handles)
+// Profile URLs for contact_methods handles (the DB stores bare handles). text is @handle, or the
+// site name when the handle isn't a name (Facebook profile.php?id= and share links).
+const CONTACT_SITES = [
+  { key: "telegram", label: "Telegram", base: "https://t.me/" },
+  { key: "facebook", label: "Facebook", base: "https://facebook.com/" },
+  { key: "instagram", label: "Instagram", base: "https://instagram.com/" },
+] as const;
 export function contactLinks(
   contact: { telegram: string | null; facebook: string | null; instagram: string | null } | null,
 ) {
-  if (!contact) return [];
-  return [
-    contact.telegram && { label: "Telegram", href: `https://t.me/${contact.telegram}` },
-    contact.facebook && { label: "Facebook", href: `https://facebook.com/${contact.facebook}` },
-    contact.instagram && { label: "Instagram", href: `https://instagram.com/${contact.instagram}` },
-  ].filter((l): l is { label: string; href: string } => !!l);
+  return CONTACT_SITES.flatMap(({ key, label, base }) => {
+    const handle = contact?.[key];
+    if (!handle) return [];
+    return { key, label, href: base + handle, text: /^[A-Za-z0-9._]+$/.test(handle) ? `@${handle}` : label };
+  });
 }

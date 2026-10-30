@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   Facebook,
-  Globe,
   Instagram,
   MapPin,
   MessageCircle,
@@ -48,12 +47,7 @@ const pillClass =
 const circleClass =
   "flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary transition-colors hover:bg-accent disabled:opacity-50";
 
-// Icon for a contact link by host
-const SOCIAL_ICONS: [RegExp, typeof Globe][] = [
-  [/(^|\.)instagram\.com$/, Instagram],
-  [/(^|\.)facebook\.com$/, Facebook],
-  [/(^|\.)t\.me$/, Send],
-];
+const CONTACT_ICONS = { telegram: Send, facebook: Facebook, instagram: Instagram };
 
 // Profile page after vgen.co: full-bleed cover, a sticky left column (avatar, name, @handle,
 // actions, bio, links) and tabbed content on the right. Shared by the public artist page and
@@ -74,7 +68,7 @@ export function ProfileView({
   const name = artist.display_name ?? "Unnamed";
   const { services, portfolio } = artist;
   const posts = artist.posts ?? [];
-  const links = contactLinks(artist.contact_methods ?? null).map((l) => l.href);
+  const links = contactLinks(artist.contact_methods ?? null);
   const isOwn = viewerId === id;
   const isArtist = artist.role === "artist";
   const requestHref = (category?: string) =>
@@ -181,19 +175,17 @@ export function ProfileView({
           {links.length > 0 && (
             <ul className="flex flex-col gap-3 text-sm font-semibold">
               {links.map((link) => {
-                const url = new URL(link);
-                const host = url.hostname.replace(/^www\./, "");
-                const Icon = SOCIAL_ICONS.find(([re]) => re.test(host))?.[1] ?? Globe;
+                const Icon = CONTACT_ICONS[link.key];
                 return (
-                  <li key={link}>
+                  <li key={link.key}>
                     <a
-                      href={link}
+                      href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex max-w-full items-center gap-2 underline-offset-4 hover:underline"
                     >
                       <Icon className="size-4 shrink-0" />
-                      <span className="truncate">{host + url.pathname.replace(/\/$/, "")}</span>
+                      <span className="truncate">{link.text}</span>
                     </a>
                   </li>
                 );

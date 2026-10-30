@@ -184,11 +184,12 @@ export function ContactFields({
   onChange,
 }: {
   contacts: Contacts;
-  onChange: (contacts: Contacts) => void;
+  // A state setter: updates build on the latest value, so a paste then blur can't undo each other
+  onChange: React.Dispatch<React.SetStateAction<Contacts>>;
 }) {
   return (
     <div className="flex flex-col gap-3">
-      {CONTACTS.map(({ key, label, prefix, icon: Icon }) => (
+      {CONTACTS.map(({ key, label, prefix, icon: Icon, host }) => (
         <PrefixInput
           key={key}
           aria-label={`${label} username`}
@@ -197,7 +198,19 @@ export function ContactFields({
           autoCapitalize="none"
           spellCheck={false}
           value={contacts[key]}
-          onChange={(e) => onChange({ ...contacts, [key]: e.target.value })}
+          onChange={(e) => {
+            const value = e.target.value;
+            onChange((c) => ({ ...c, [key]: value }));
+          }}
+          // A pasted profile link shows as just the username; typed links are trimmed on blur
+          onPaste={(e) => {
+            const pasted = e.clipboardData.getData("text").trim();
+            const handle = contactHandle(pasted, host);
+            if (handle === pasted) return;
+            e.preventDefault();
+            onChange((c) => ({ ...c, [key]: handle }));
+          }}
+          onBlur={() => onChange((c) => ({ ...c, [key]: contactHandle(c[key], host) }))}
         />
       ))}
     </div>

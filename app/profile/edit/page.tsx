@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/components/profile-form";
-import { DeleteAccount } from "@/components/delete-account";
 import { Loading } from "@/components/loading";
 
 async function Profile() {
@@ -53,7 +52,6 @@ async function Profile() {
         }}
         userId={user.sub}
       />
-      <DeleteAccount />
     </>
   );
 }
