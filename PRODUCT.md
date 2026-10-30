@@ -30,8 +30,8 @@ Artisity is a marketplace where people and businesses discover Cambodian artists
 
 ## Capabilities and Constraints
 
-- **Built:** auth (email/password, OAuth), onboarding (client/artist role), profiles (avatar, cover, bio, social links, portfolio), priced services, artist directory, messaging, commission requests with an enforced status flow, admin user list.
-- **Not built yet:** About page, Shop (digital products), favorites/saves, reviews, notifications, on-platform payments (KHQR/ABA are the likely local options), delivery file uploads, disputes, verification badges. Future work must not present these as existing.
+- **Built:** an About page (`/about`, placeholder image), auth (email/password, OAuth), onboarding (client/artist role), profiles (avatar, cover, bio, social links, portfolio), priced services, artist directory, messaging, commission requests with an enforced status flow, admin user list.
+- **Not built yet:** Shop (digital products), favorites/saves, reviews, notifications, on-platform payments (KHQR/ABA are the likely local options), delivery file uploads, disputes, verification badges. Future work must not present these as existing.
 - **Stack:** Next.js (App Router), Supabase (auth, Postgres with RLS, storage, realtime), Tailwind 3 + shadcn/ui. See CLAUDE.md.
 - **Terminology:** "Commission" is the client-facing name for hiring an artist, used in the nav and in "Request commission". A "request" is a single commission order.
 
