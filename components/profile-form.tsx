@@ -3,11 +3,9 @@
 import { createClient } from "@/lib/supabase/client";
 import { uploadImage } from "@/lib/upload";
 import {
-  USERNAME_HINT,
-  USERNAME_RE,
   cn,
-  parseSocialLinks,
   toUsername,
+  usernameError,
 } from "@/lib/utils";
 import { BUSINESS_TYPES, PROVINCES } from "@/lib/options";
 import { FormError } from "@/components/auth-parts";
@@ -21,12 +19,10 @@ import {
 import {
   ContactFields,
   ImagesEditor,
-  LinksEditor,
   contactRow,
   useObjectUrl,
   type Contacts,
 } from "@/components/profile-fields";
-import { Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -36,7 +32,6 @@ export type Profile = {
   bio: string | null;
   avatar_url: string | null;
   cover_url: string | null;
-  social_links: string[];
   location: string | null;
   role: string | null;
   business_name: string | null;
@@ -82,13 +77,12 @@ export function ProfileForm({
   const [location, setLocation] = useState(profile.location ?? "");
   const [businessName, setBusinessName] = useState(profile.business_name ?? "");
   const [businessType, setBusinessType] = useState(profile.business_type ?? "");
-  const [links, setLinks] = useState(profile.social_links);
   const [contacts, setContacts] = useState(initialContacts);
   const [avatar, setAvatar] = useState<File | null>(null);
   const [cover, setCover] = useState<File | null>(null);
   const [coverRemoved, setCoverRemoved] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [saving, setSaving] = useState(false);
   const router = useRouter();
 
   const avatarPreview = useObjectUrl(avatar);
@@ -97,27 +91,17 @@ export function ProfileForm({
   const coverSrc = coverPreview ?? (coverRemoved ? null : profile.cover_url);
 
   // Any edit after a save clears the "Saved" confirmation
-  const edit =
-    <T,>(set: (v: T) => void) =>
-    (v: T) => {
-      set(v);
-      setStatus("idle");
-    };
-
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
-    setStatus("saving");
+    setSaving(true);
     const supabase = createClient();
     try {
       if (!name.trim()) throw new Error("Add a display name.");
-      if (username && !USERNAME_RE.test(username))
-        throw new Error(`Username: ${USERNAME_HINT}.`);
+      const badUsername = username && usernameError(username);
+      if (badUsername) throw new Error(badUsername);
       if (isClient && !businessType)
         throw new Error("Choose what best describes you.");
-      const socialLinks = parseSocialLinks(
-        links.filter((l) => l.trim()).join("\n"),
-      );
       const contactValues = contactRow(contacts);
 
       const { error: contactError } = await supabase
@@ -132,13 +116,12 @@ export function ProfileForm({
           username: username || null,
           bio: bio.trim() || null,
           location: location || null,
-          social_links: socialLinks,
           ...(isClient && {
             business_name: businessName.trim() || null,
             business_type: businessType,
           }),
           ...(avatar && {
-            avatar_url: await uploadImage(supabase, `${userId}/avatar`, avatar),
+            avatar_url: await uploadImage(supabase, `${userId}/avatar`, avatar, 800),
           }),
           ...(cover
             ? {
@@ -158,13 +141,10 @@ export function ProfileForm({
             : error.message,
         );
 
-      setAvatar(null);
-      setCover(null);
-      setLinks(socialLinks);
-      setStatus("saved");
-      router.refresh();
+      // Stays "Saving…" until the profile page replaces this one
+      router.push("/profile");
     } catch (err: unknown) {
-      setStatus("idle");
+      setSaving(false);
       setError(err instanceof Error ? err.message : "Something went wrong.");
     }
   };
@@ -175,13 +155,13 @@ export function ProfileForm({
         <ImagesEditor
           avatarSrc={avatarSrc}
           coverSrc={coverSrc}
-          onAvatar={edit(setAvatar)}
+          onAvatar={setAvatar}
           onCover={(f) => {
-            edit(setCover)(f);
+            setCover(f);
             setCoverRemoved(false);
           }}
           onRemoveCover={() => {
-            edit(setCover)(null);
+            setCover(null);
             setCoverRemoved(true);
           }}
         />
@@ -193,12 +173,12 @@ export function ProfileForm({
               maxLength={100}
               autoComplete="name"
               value={name}
-              onChange={(e) => edit(setName)(e.target.value)}
+              onChange={(e) => setName(e.target.value)}
               className={fieldClass}
             />
           )}
         </Field>
-        <Field label="Username" hint={USERNAME_HINT}>
+        <Field label="Username">
           {(id) => (
             <PrefixInput
               id={id}
@@ -207,7 +187,7 @@ export function ProfileForm({
               spellCheck={false}
               maxLength={30}
               value={username}
-              onChange={(e) => edit(setUsername)(toUsername(e.target.value))}
+              onChange={(e) => setUsername(toUsername(e.target.value))}
             />
           )}
         </Field>
@@ -222,7 +202,7 @@ export function ProfileForm({
               rows={4}
               placeholder="Who you are, your specialties, languages, tools…"
               value={bio}
-              onChange={(e) => edit(setBio)(e.target.value)}
+              onChange={(e) => setBio(e.target.value)}
               className={`${fieldClass} h-auto min-h-32 resize-y py-3`}
             />
           )}
@@ -232,7 +212,7 @@ export function ProfileForm({
             <SelectField
               id={id}
               value={location}
-              onChange={(e) => edit(setLocation)(e.target.value)}
+              onChange={(e) => setLocation(e.target.value)}
             >
               <option value="">Select your province…</option>
               {PROVINCES.map((p) => (
@@ -248,7 +228,7 @@ export function ProfileForm({
                 <SelectField
                   id={id}
                   value={businessType}
-                  onChange={(e) => edit(setBusinessType)(e.target.value)}
+                  onChange={(e) => setBusinessType(e.target.value)}
                 >
                   <option value="">Select…</option>
                   {BUSINESS_TYPES.map((t) => (
@@ -263,7 +243,7 @@ export function ProfileForm({
                   id={id}
                   maxLength={100}
                   value={businessName}
-                  onChange={(e) => edit(setBusinessName)(e.target.value)}
+                  onChange={(e) => setBusinessName(e.target.value)}
                   className={fieldClass}
                 />
               )}
@@ -273,39 +253,24 @@ export function ProfileForm({
       </Section>
 
       <Section
-        title="Socials + links"
-        description="Shown on your public profile."
+        title="Social links"
+        description={
+          "Let client find you somewhere else."
+        }
       >
-        <LinksEditor links={links} onChange={edit(setLinks)} />
-      </Section>
-
-      <Section
-        title="Contact methods"
-        description="Private. Only shared with people you have a commission request with."
-      >
-        <ContactFields contacts={contacts} onChange={edit(setContacts)} />
+        <ContactFields contacts={contacts} onChange={setContacts} />
       </Section>
 
       {/* Sticky save bar; bottom-[5rem+inset] clears the mobile tab bar */}
       <div className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[5] flex flex-col gap-2 rounded-3xl bg-nav/95 p-3 shadow-float backdrop-blur md:bottom-4">
         <FormError message={error} />
-        <div className="flex items-center gap-3">
-          <p
-            role="status"
-            className="flex-1 pl-3 text-sm text-muted-foreground"
-          >
-            {status === "saved" && (
-              <span className="inline-flex items-center gap-1.5 font-semibold text-primary-ink">
-                <Check className="size-4" /> Saved
-              </span>
-            )}
-          </p>
+        <div className="flex items-center justify-end gap-3">
           <button
             type="submit"
-            disabled={status === "saving"}
+            disabled={saving}
             className={cn(pillClass.final, "h-12 w-auto px-8")}
           >
-            {status === "saving" ? "Saving…" : "Save changes"}
+            {saving ? "Saving…" : "Save changes"}
           </button>
         </div>
       </div>

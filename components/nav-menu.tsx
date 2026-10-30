@@ -15,6 +15,7 @@ import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { type Theme } from "@/lib/theme";
 import Link from "next/link";
+import { useState } from "react";
 
 const THEMES = [
   { value: "light", label: "Light", Icon: Sun },
@@ -37,7 +38,11 @@ export function NavMenu({
 }) {
   const { theme, setTheme } = useTheme();
 
-  const logout = async () => {
+  const [loggingOut, setLoggingOut] = useState(false);
+  const logout = async (e: Event) => {
+    // Keep the menu open to show progress; the full load below replaces the page
+    e.preventDefault();
+    setLoggingOut(true);
     await createClient().auth.signOut();
     // Full load: a soft push would open the login modal over a page that now redirects
     window.location.assign("/auth/login");
@@ -99,7 +104,9 @@ export function NavMenu({
             <DropdownMenuSeparator />
             {themeItem}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={logout}>Log out</DropdownMenuItem>
+            <DropdownMenuItem onSelect={logout} disabled={loggingOut}>
+              {loggingOut ? "Logging out…" : "Log out"}
+            </DropdownMenuItem>
           </>
         ) : (
           <>

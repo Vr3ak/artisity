@@ -16,8 +16,14 @@ export function profileHref(p: { id: string; username?: string | null }) {
 
 // Mirrors the profiles.username check constraint
 export const USERNAME_RE = /^[a-z0-9_]{3,30}$/;
-export const USERNAME_HINT =
-  "3–30 characters: lowercase letters, numbers and _";
+// Names only the rule the username breaks; toUsername already strips most bad characters as you type
+export function usernameError(u: string): string | null {
+  if (!u) return "Choose a username.";
+  if (u.length < 3) return "Username needs at least 3 characters.";
+  if (u.length > 30) return "Username can be at most 30 characters.";
+  if (!USERNAME_RE.test(u)) return "Username can only use lowercase letters, numbers and _.";
+  return null;
+}
 // What a user typed → candidate username (lowercased, spaces and stray characters dropped)
 export const toUsername = (raw: string) =>
   raw
@@ -31,6 +37,10 @@ export const isUuid = (s: string) => UUID.test(s);
 // Public URL of a file in the profile-images bucket (posts store the path, not the URL)
 export const profileImageUrl = (path: string) =>
   `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-images/${path}`;
+
+// A post's image paths: the cover is image_path, the rest add -1 … -9 (see supabase/schemas/posts.sql)
+export const postImagePaths = (imagePath: string, count: number) =>
+  Array.from({ length: count }, (_, i) => (i ? `${imagePath}-${i}` : imagePath));
 
 // RLS rejects writes between blocked users (and other forbidden writes) with 42501;
 // show that plainly instead of "new row violates row-level security policy".
@@ -55,14 +65,35 @@ export function formatPrice(min: number, max: number, currency: string) {
     : `${fmt.format(min)} – ${fmt.format(max)}`;
 }
 
-// One link per line; mirrors the social_links DB checks (http(s) only, max 5)
-export function parseSocialLinks(text: string): string[] {
-  const links = text
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean);
-  if (links.length > 5) throw new Error("At most 5 links");
-  const bad = links.find((l) => !/^https?:\/\//i.test(l));
-  if (bad) throw new Error(`Links must start with https://: ${bad}`);
-  return links;
+// Typed value → the handle contact_methods stores. A pasted profile link on that site (any
+// subdomain, with or without https://) becomes its path; share-tracking queries (?igsh=,
+// ?mibextid=) and trailing slashes go, except Facebook's profile.php?id=.
+export function contactHandle(raw: string, host: RegExp): string {
+  const v = raw.trim().replace(/^@/, "");
+  let url: URL;
+  try {
+    url = new URL(/^https?:\/\//i.test(v) ? v : `https://${v}`);
+  } catch {
+    return v;
+  }
+  if (!host.test(url.hostname)) return v;
+  const path = url.pathname.replace(/^\/+|\/+$/g, "").replace(/^@/, "");
+  const id = path === "profile.php" ? url.searchParams.get("id") : null;
+  return id ? `${path}?id=${id}` : path;
+}
+
+// Profile URLs for contact_methods handles (the DB stores bare handles)
+const CONTACT_SITES = [
+  { key: "telegram", label: "Telegram", base: "https://t.me/" },
+  { key: "facebook", label: "Facebook", base: "https://facebook.com/" },
+  { key: "instagram", label: "Instagram", base: "https://instagram.com/" },
+] as const;
+export function contactLinks(
+  contact: { telegram: string | null; facebook: string | null; instagram: string | null } | null,
+) {
+  return CONTACT_SITES.flatMap(({ key, label, base }) => {
+    const handle = contact?.[key];
+    if (!handle) return [];
+    return { key, label, href: base + handle };
+  });
 }

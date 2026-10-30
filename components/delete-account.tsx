@@ -1,15 +1,15 @@
 "use client";
 
 import { SUPPORT_EMAIL } from "@/lib/options";
-import { cn } from "@/lib/utils";
 import { FormError } from "@/components/auth-parts";
-import { fieldClass, pillClass } from "@/components/flow";
+import { fieldClass } from "@/components/flow";
 import { Modal, modalButton } from "@/components/modal";
 import { useState } from "react";
 
 const CONFIRM_WORD = "DELETE";
 
-// Danger zone at the bottom of /profile/edit. The server route does the deleting.
+// Small "Delete account" link at the bottom of /profile/edit; the modal carries the warning.
+// The server route does the deleting.
 export function DeleteAccount() {
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
@@ -38,18 +38,11 @@ export function DeleteAccount() {
   };
 
   return (
-    <section className="flex flex-col items-start gap-4 rounded-3xl bg-nav p-6 sm:p-8">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-2xl font-bold tracking-tight">Delete account</h2>
-        <p className="text-sm text-muted-foreground">
-          Permanently removes your profile, images, services, messages, requests and contact
-          details. People you&apos;ve talked to will lose those conversations too.
-        </p>
-      </div>
+    <div>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={cn(pillClass.outline, "h-12 w-auto px-6 text-destructive")}
+        className="text-sm text-muted-foreground underline-offset-4 hover:text-destructive hover:underline"
       >
         Delete account
       </button>
@@ -61,7 +54,9 @@ export function DeleteAccount() {
               Delete your account?
             </h2>
             <p className="text-sm text-muted-foreground">
-              This can&apos;t be undone. Type <strong className="text-foreground">{CONFIRM_WORD}</strong>{" "}
+              This permanently removes your profile, images, services, messages, requests and
+              contact details, and the people you&apos;ve talked to lose those conversations.
+              It can&apos;t be undone. Type <strong className="text-foreground">{CONFIRM_WORD}</strong>{" "}
               to confirm.
             </p>
             <input
@@ -90,6 +85,6 @@ export function DeleteAccount() {
           </form>
         </Modal>
       )}
-    </section>
+    </div>
   );
 }

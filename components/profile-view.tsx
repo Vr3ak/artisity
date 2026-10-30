@@ -1,20 +1,15 @@
 import Link from "next/link";
 import {
-  Dribbble,
   Facebook,
-  Github,
-  Globe,
   Instagram,
-  Linkedin,
   MapPin,
   MessageCircle,
   Plus,
-  Twitch,
-  Twitter,
-  Youtube,
+  Send,
 } from "lucide-react";
 import { categoryLabel } from "@/lib/options";
-import { formatPrice, profileImageUrl } from "@/lib/utils";
+import { contactLinks, formatPrice, postImagePaths, profileImageUrl } from "@/lib/utils";
+import { ImageCarousel } from "@/components/image-carousel";
 import { MessageButton } from "@/components/message-button";
 import { SafetyMenu } from "@/components/safety-menu";
 
@@ -36,14 +31,15 @@ export type ProfileData = {
   cover_url: string | null;
   bio: string | null;
   location: string | null;
-  social_links: string[];
+  // Public for artists; clients' only reach their own page and request partners (RLS)
+  contact_methods?: { telegram: string | null; facebook: string | null; instagram: string | null } | null;
   role: string | null;
   business_name?: string | null;
   business_type?: string | null;
   portfolio: string[];
   services: Service[];
   // Newest first; only artists have posts
-  posts?: { id: string; title: string; image_path: string }[];
+  posts?: { id: string; title: string; image_path: string; image_count: number }[];
 };
 
 const pillClass =
@@ -51,17 +47,7 @@ const pillClass =
 const circleClass =
   "flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary transition-colors hover:bg-accent disabled:opacity-50";
 
-// Icon for a social link by host; anything unknown gets a globe
-const SOCIAL_ICONS: [RegExp, typeof Globe][] = [
-  [/(^|\.)instagram\.com$/, Instagram],
-  [/(^|\.)(facebook|fb)\.com$/, Facebook],
-  [/(^|\.)(youtube\.com|youtu\.be)$/, Youtube],
-  [/(^|\.)(twitter|x)\.com$/, Twitter],
-  [/(^|\.)linkedin\.com$/, Linkedin],
-  [/(^|\.)github\.com$/, Github],
-  [/(^|\.)dribbble\.com$/, Dribbble],
-  [/(^|\.)twitch\.tv$/, Twitch],
-];
+const CONTACT_ICONS = { telegram: Send, facebook: Facebook, instagram: Instagram };
 
 // Profile page after vgen.co: full-bleed cover, a sticky left column (avatar, name, @handle,
 // actions, bio, links) and tabbed content on the right. Shared by the public artist page and
@@ -82,6 +68,7 @@ export function ProfileView({
   const name = artist.display_name ?? "Unnamed";
   const { services, portfolio } = artist;
   const posts = artist.posts ?? [];
+  const links = contactLinks(artist.contact_methods ?? null);
   const isOwn = viewerId === id;
   const isArtist = artist.role === "artist";
   const requestHref = (category?: string) =>
@@ -185,21 +172,21 @@ export function ProfileView({
             <p className="whitespace-pre-line text-sm leading-relaxed">{artist.bio}</p>
           )}
 
-          {artist.social_links.length > 0 && (
-            <ul className="flex flex-col gap-3 text-sm font-semibold">
-              {artist.social_links.map((link) => {
-                const host = new URL(link).hostname.replace(/^www\./, "");
-                const Icon = SOCIAL_ICONS.find(([re]) => re.test(host))?.[1] ?? Globe;
+          {links.length > 0 && (
+            <ul className="flex gap-2">
+              {links.map((link) => {
+                const Icon = CONTACT_ICONS[link.key];
                 return (
-                  <li key={link}>
+                  <li key={link.key}>
                     <a
-                      href={link}
+                      href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 underline-offset-4 hover:underline"
+                      aria-label={`${name} on ${link.label}`}
+                      title={link.label}
+                      className={circleClass}
                     >
-                      <Icon className="size-4 shrink-0" />
-                      {host}
+                      <Icon className="size-5" />
                     </a>
                   </li>
                 );
@@ -319,14 +306,11 @@ export function ProfileView({
                     href={`/posts/${post.id}`}
                     className="group relative block aspect-square overflow-hidden rounded-2xl bg-secondary outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={profileImageUrl(post.image_path)}
+                    <ImageCarousel
+                      images={postImagePaths(post.image_path, post.image_count).map(profileImageUrl)}
                       alt={post.title}
-                      loading="lazy"
-                      className="size-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03] motion-reduce:transition-none"
                     />
-                    <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 to-transparent px-3 pb-2.5 pt-8 text-sm font-semibold text-white">
+                    <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 to-transparent px-3 pb-2.5 pt-8 text-sm font-semibold text-white">
                       {post.title}
                     </span>
                   </Link>

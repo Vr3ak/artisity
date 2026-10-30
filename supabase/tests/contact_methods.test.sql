@@ -1,7 +1,7 @@
 -- npx supabase test db --local
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(8);
+select plan(13);
 
 -- client (c), artist (a), outsider (o)
 insert into auth.users (id, email) values
@@ -24,17 +24,25 @@ select throws_ok($$ update public.profiles set username = 'Bad Name' where id = 
 select lives_ok($$ update public.profiles set username = 'client_one' where id = '00000000-0000-0000-0000-00000000000c' $$, 'client picks a username');
 
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
-select is((select count(*) from public.contact_methods), 0::bigint, 'artist cannot see contacts before a request');
+select is((select count(*) from public.contact_methods where user_id = '00000000-0000-0000-0000-00000000000c'), 0::bigint, 'artist cannot see contacts before a request');
 select throws_ok($$ update public.profiles set username = 'client_one' where id = '00000000-0000-0000-0000-00000000000a' $$, '23505', null, 'usernames are unique');
 
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000c');
 insert into public.requests (artist_id, category, brief) values ('00000000-0000-0000-0000-00000000000a', 'illustration', 'hi');
 
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
-select is((select telegram from public.contact_methods), 'client_tg', 'artist sees contacts after a request');
+select is((select telegram from public.contact_methods where user_id = '00000000-0000-0000-0000-00000000000c'), 'client_tg', 'artist sees contacts after a request');
+
+select lives_ok($$ insert into public.contact_methods (instagram) values ('artist_ig') $$, 'artist saves own contacts');
+select lives_ok($$ update public.contact_methods set facebook = 'profile.php?id=100012345678' $$, 'facebook accepts profile.php ids');
+select throws_ok($$ update public.contact_methods set facebook = 'evil.com/x' $$, '23514', null, 'facebook rejects other paths');
 
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000f');
-select is((select count(*) from public.contact_methods), 0::bigint, 'outsider sees no contacts');
+select is((select count(*) from public.contact_methods where user_id = '00000000-0000-0000-0000-00000000000c'), 0::bigint, 'outsider cannot see client contacts');
+select is((select instagram from public.contact_methods where user_id = '00000000-0000-0000-0000-00000000000a'), 'artist_ig', 'anyone signed in sees artist contacts');
+
+set local role anon;
+select is((select count(*) from public.contact_methods where user_id = '00000000-0000-0000-0000-00000000000c'), 0::bigint, 'anon cannot see client contacts');
 
 select * from finish();
 rollback;

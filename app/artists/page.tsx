@@ -5,6 +5,7 @@ import { CATEGORIES, categoryLabel } from "@/lib/options";
 import { formatPrice, profileHref } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { CategoryChips } from "@/components/category-chips";
+import { Loading } from "@/components/loading";
 
 type Service = { price_min: number; currency: string };
 
@@ -92,7 +93,7 @@ export default function Page({
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-5">
       <h1 className="text-2xl font-semibold">Find an artist</h1>
-      <Suspense>
+      <Suspense fallback={<Loading />}>
         <ArtistGrid searchParams={searchParams} />
       </Suspense>
     </main>

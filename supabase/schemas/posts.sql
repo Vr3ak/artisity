@@ -1,10 +1,12 @@
--- An artist's showcase post: one image with a title and caption, shown in the home feed,
+-- An artist's showcase post: 1-10 images with a title and caption, shown in the home feed,
 -- on their profile and at /posts/[id].
 create table public.posts (
   id uuid primary key default gen_random_uuid(),
   artist_id uuid not null default auth.uid() references public.profiles (id) on delete cascade,
   -- Path in the public profile-images bucket; the app builds the URL, so posts can't point off-site
   image_path text not null,
+  -- Image 0 is image_path (the cover); image i > 0 is image_path || '-' || i (postImagePaths in lib/utils.ts)
+  image_count smallint not null default 1 check (image_count between 1 and 10),
   title text not null check (char_length(title) between 1 and 100),
   caption text not null default '' check (char_length(caption) <= 2000),
   category public.art_category,

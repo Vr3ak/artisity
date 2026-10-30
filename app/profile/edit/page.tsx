@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/components/profile-form";
-import { DeleteAccount } from "@/components/delete-account";
+import { Loading } from "@/components/loading";
 
 async function Profile() {
   const supabase = await createClient();
@@ -15,10 +15,10 @@ async function Profile() {
     supabase
       .from("profiles")
       .select(
-        "display_name, username, bio, avatar_url, cover_url, social_links, location, role, business_name, business_type",
+        "display_name, username, bio, avatar_url, cover_url, location, role, business_name, business_type",
       )
       .eq("id", user.sub)
-      .single(),
+      .maybeSingle(),
     supabase
       .from("contact_methods")
       .select("telegram, facebook, instagram")
@@ -26,6 +26,8 @@ async function Profile() {
       .maybeSingle(),
   ]);
   if (error) throw error;
+  // No row: the account is gone (deleted elsewhere) but this browser's token hasn't expired
+  if (!profile) redirect("/auth/login");
   if (!profile.role) redirect("/onboarding");
 
   return (
@@ -50,7 +52,6 @@ async function Profile() {
         }}
         userId={user.sub}
       />
-      <DeleteAccount />
     </>
   );
 }
@@ -58,7 +59,7 @@ async function Profile() {
 export default function Page() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6 md:py-10">
-      <Suspense>
+      <Suspense fallback={<Loading />}>
         <Profile />
       </Suspense>
     </main>

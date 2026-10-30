@@ -3,11 +3,9 @@
 import { createClient } from "@/lib/supabase/client";
 import { uploadImage } from "@/lib/upload";
 import {
-  USERNAME_HINT,
-  USERNAME_RE,
-  parseSocialLinks,
   profileHref,
   toUsername,
+  usernameError,
 } from "@/lib/utils";
 import {
   BUSINESS_TYPES,
@@ -28,13 +26,13 @@ import {
   fieldClass,
   pillClass,
 } from "@/components/flow";
-import { ImagePlus, X } from "lucide-react";
+import { ImagePlus } from "lucide-react";
 import {
   ContactFields,
   EMPTY_CONTACTS,
   IMAGE_TYPES,
+  ImageTile,
   ImagesEditor,
-  LinksEditor,
   contactRow,
   useObjectUrl,
 } from "@/components/profile-fields";
@@ -48,7 +46,6 @@ type Step =
   | "services"
   | "interests"
   | "portfolio"
-  | "socials"
   | "contacts";
 
 const MAX_PORTFOLIO = 12;
@@ -91,7 +88,6 @@ export function OnboardingForm({
   // portfolio
   const [portfolio, setPortfolio] = useState<File[]>([]);
   // socials + contacts
-  const [links, setLinks] = useState<string[]>([]);
   const [contacts, setContacts] = useState(EMPTY_CONTACTS);
 
   const [error, setError] = useState<string | null>(null);
@@ -105,8 +101,8 @@ export function OnboardingForm({
   const coverSrc = coverPreview ?? (coverRemoved ? null : initial.cover_url);
 
   const steps: Step[] = isArtist
-    ? ["look", "details", "services", "portfolio", "socials", "contacts"]
-    : ["look", "details", "interests", "socials", "contacts"];
+    ? ["look", "details", "services", "portfolio", "contacts"]
+    : ["look", "details", "interests", "contacts"];
   const step = steps[stepIndex];
 
   const goTo = (i: number) => {
@@ -151,8 +147,8 @@ export function OnboardingForm({
       if (step === "look") {
         if (!name.trim()) throw new Error("Add a display name.");
         if (!usernameSaved) {
-          if (!USERNAME_RE.test(username))
-            throw new Error(`Username: ${USERNAME_HINT}.`);
+          const bad = usernameError(username);
+          if (bad) throw new Error(bad);
           setBusy(true);
           const { error } = await createClient()
             .from("profiles")
@@ -185,7 +181,6 @@ export function OnboardingForm({
       if (step === "services") buildServices();
       if (step === "portfolio" && portfolio.length === 0)
         throw new Error("Add at least one image of your work.");
-      if (step === "socials") parseSocialLinks(links.join("\n"));
       if (step === "contacts") return await finish();
       goTo(stepIndex + 1);
     } catch (err: unknown) {
@@ -198,7 +193,6 @@ export function OnboardingForm({
     const supabase = createClient();
     setBusy(true);
     const contactValues = contactRow(contacts);
-    const socialLinks = parseSocialLinks(links.join("\n"));
     let artistFields = {};
     if (isArtist) {
       const services = buildServices();
@@ -236,9 +230,8 @@ export function OnboardingForm({
         bio: bio.trim() || null,
         location,
         categories,
-        social_links: socialLinks,
         ...(avatar && {
-          avatar_url: await uploadImage(supabase, `${userId}/avatar`, avatar),
+          avatar_url: await uploadImage(supabase, `${userId}/avatar`, avatar, 800),
         }),
         ...(cover
           ? { cover_url: await uploadImage(supabase, `${userId}/cover`, cover) }
@@ -319,7 +312,7 @@ export function OnboardingForm({
           )}
         </Field>
         {!initial.username && (
-          <Field label="Username" hint={USERNAME_HINT}>
+          <Field label="Username">
             {(id) => (
               <PrefixInput
                 id={id}
@@ -352,11 +345,6 @@ export function OnboardingForm({
               id={id}
               maxLength={500}
               rows={4}
-              placeholder={
-                isArtist
-                  ? "Write a little so clients get to know you: who you are, your specialties, languages, tools…"
-                  : "Write a little so artists get to know you and what you're working on…"
-              }
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               className={`${fieldClass} h-auto min-h-32 resize-y py-3`}
@@ -500,7 +488,7 @@ export function OnboardingForm({
       "Show your work",
       <ul className="grid grid-cols-3 gap-2">
         {portfolio.map((f, i) => (
-          <PortfolioTile
+          <ImageTile
             key={`${f.name}-${f.lastModified}-${i}`}
             file={f}
             onRemove={() => setPortfolio((ps) => ps.filter((_, j) => j !== i))}
@@ -531,44 +519,11 @@ export function OnboardingForm({
       `Upload 1–${MAX_PORTFOLIO} pieces. They appear on your profile and in the home feed.`,
     );
 
-  if (step === "socials")
-    return card(
-      "Socials + links",
-      <LinksEditor links={links} onChange={setLinks} />,
-      links.length === 0
-        ? "Optional. Add your website, Behance, or any page that shows your work."
-        : undefined,
-    );
-
   return card(
-    "Would you like to add any other contact methods?",
+    "Social links",
     <ContactFields contacts={contacts} onChange={setContacts} />,
-    "Optional. Only shared with people you have a commission request with.",
-  );
-}
-
-function PortfolioTile({
-  file,
-  onRemove,
-}: {
-  file: File;
-  onRemove: () => void;
-}) {
-  const url = useObjectUrl(file);
-  return (
-    <li className="relative aspect-square overflow-hidden rounded-xl bg-secondary">
-      {url && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt={file.name} className="size-full object-cover" />
-      )}
-      <button
-        type="button"
-        aria-label={`Remove ${file.name}`}
-        onClick={onRemove}
-        className="absolute right-1.5 top-1.5 flex size-8 items-center justify-center rounded-full bg-nav/80 hover:bg-nav"
-      >
-        <X className="size-4" />
-      </button>
-    </li>
+    isArtist
+      ? "Optional. Shown on your profile so clients can reach you."
+      : "Optional. Only shared with people you have a commission request with.",
   );
 }

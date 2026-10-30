@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { reportReasonLabel } from "@/lib/options";
 import { profileHref } from "@/lib/utils";
 import { ResolveButton } from "./resolve-button";
+import { Loading } from "@/components/loading";
 
 type Person = { id: string; display_name: string | null; username: string | null; role: string | null } | null;
 
@@ -111,7 +112,7 @@ export default function Page() {
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-5">
       <h1 className="text-2xl font-semibold">Staff</h1>
-      <Suspense>
+      <Suspense fallback={<Loading />}>
         <Users />
       </Suspense>
     </main>

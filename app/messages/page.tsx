@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { Loading } from "@/components/loading";
 
 type Person = { id: string; display_name: string | null; avatar_url: string | null };
 
@@ -57,7 +58,7 @@ export default function Page() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-5">
       <h1 className="text-2xl font-semibold">Messages</h1>
-      <Suspense>
+      <Suspense fallback={<Loading />}>
         <Conversations />
       </Suspense>
     </main>

@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { USERNAME_HINT, USERNAME_RE, toUsername } from "@/lib/utils";
+import { toUsername, usernameError } from "@/lib/utils";
 import { OAuthButtons } from "@/components/oauth-buttons";
 import { FormError, MIN_PASSWORD } from "@/components/auth-parts";
 import {
@@ -100,8 +100,8 @@ export function SignUpForm() {
 
   const saveUsername = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!USERNAME_RE.test(username))
-      return setError(`Username: ${USERNAME_HINT}.`);
+    const bad = usernameError(username);
+    if (bad) return setError(bad);
     setBusy("continue");
     setError(null);
     const supabase = createClient();
@@ -208,7 +208,7 @@ export function SignUpForm() {
             </div>
           )}
 
-          <Field label="Username" hint={USERNAME_HINT}>
+          <Field label="Username">
             {(id) => (
               <PrefixInput
                 id={id}
@@ -298,7 +298,7 @@ export function SignUpForm() {
           <FormError message={error} />
           <button
             type="submit"
-            disabled={!verified || !USERNAME_RE.test(username) || busy !== null}
+            disabled={!verified || busy !== null}
             className={verified ? pillClass.next : pillClass.outline}
           >
             {busy === "continue" ? "Saving…" : "Continue"}

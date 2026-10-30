@@ -8,6 +8,7 @@ import { RealtimeChat } from "@/components/realtime-chat";
 import { SafetyMenu } from "@/components/safety-menu";
 import { Avatar } from "@/components/tab-bar";
 import { profileHref } from "@/lib/utils";
+import { Loading } from "@/components/loading";
 
 async function Chat({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -71,7 +72,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   return (
     // Full-height pane between the 4rem top bar and, below md, the 4rem tab bar
     <main className="mx-auto flex h-[calc(100dvh-8rem-env(safe-area-inset-bottom))] w-full max-w-3xl flex-col md:h-[calc(100dvh-4rem)]">
-      <Suspense>
+      <Suspense fallback={<Loading />}>
         <Chat params={params} />
       </Suspense>
     </main>

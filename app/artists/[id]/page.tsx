@@ -1,3 +1,4 @@
+import { Loading } from "@/components/loading";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
@@ -24,7 +25,7 @@ async function Artist({
   const { data: artist, error } = await supabase
     .from("profiles")
     .select(
-      "id, username, display_name, avatar_url, cover_url, bio, location, social_links, role, portfolio, services(category, currency, price_min, price_max), posts(id, title, image_path)",
+      "id, username, display_name, avatar_url, cover_url, bio, location, role, portfolio, services(category, currency, price_min, price_max), posts(id, title, image_path, image_count), contact_methods(telegram, facebook, instagram)",
     )
     .eq(isUuid(key) ? "id" : "username", decodeURIComponent(key).toLowerCase())
     .eq("role", "artist")
@@ -41,7 +42,7 @@ async function Artist({
 
   return (
     <ProfileView
-      profile={artist as ProfileData}
+      profile={artist as unknown as ProfileData}
       tab={tab}
       viewerId={viewerId}
       blocked={!!block}
@@ -58,7 +59,7 @@ export default function Page({
 }) {
   return (
     <main className="w-full">
-      <Suspense>
+      <Suspense fallback={<Loading />}>
         <Artist params={params} searchParams={searchParams} />
       </Suspense>
     </main>

@@ -8,11 +8,11 @@ import { useState } from "react";
 
 export function DeletePostButton({
   postId,
-  imagePath,
+  imagePaths,
   className,
 }: {
   postId: string;
-  imagePath: string;
+  imagePaths: string[];
   className: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -29,8 +29,8 @@ export function DeletePostButton({
       setBusy(false);
       return setError(error.message);
     }
-    // The post is gone either way; a leftover image only costs storage
-    await supabase.storage.from("profile-images").remove([imagePath]);
+    // The post is gone either way; leftover images only costs storage
+    await supabase.storage.from("profile-images").remove(imagePaths);
     router.push("/profile?tab=portfolio");
     router.refresh();
   };

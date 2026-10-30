@@ -1,7 +1,7 @@
 -- npx supabase test db --local
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(8);
+select plan(9);
 
 -- artist (a), second artist (b), client (c)
 insert into auth.users (id, email) values
@@ -30,6 +30,10 @@ select throws_ok($$
   insert into public.posts (id, image_path, title)
   values ('00000000-0000-0000-0000-0000000000f3', '00000000-0000-0000-0000-00000000000a/posts/00000000-0000-0000-0000-0000000000f3', '')
 $$, '23514', null, 'title required');
+select throws_ok($$
+  insert into public.posts (id, image_path, image_count, title)
+  values ('00000000-0000-0000-0000-0000000000f5', '00000000-0000-0000-0000-00000000000a/posts/00000000-0000-0000-0000-0000000000f5', 11, 'too many')
+$$, '23514', null, 'at most 10 images');
 
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000c');
 select throws_ok($$
@@ -39,16 +43,16 @@ $$, '42501', null, 'clients cannot post');
 
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000b');
 delete from public.posts;
-select is((select count(*) from public.posts), 1::bigint, 'others cannot delete a post');
+select is((select count(*) from public.posts where id = '00000000-0000-0000-0000-0000000000f1'), 1::bigint, 'others cannot delete a post');
 
 set local role anon;
-select is((select title from public.posts), 'Temple at dusk', 'anyone can read posts');
+select is((select title from public.posts where id = '00000000-0000-0000-0000-0000000000f1'), 'Temple at dusk', 'anyone can read posts');
 
 set local role authenticated;
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
-select throws_ok($$ update public.posts set title = 'edited' $$, '42501', null, 'posts are not editable');
+select throws_ok($$ update public.posts set title = 'edited' where id = '00000000-0000-0000-0000-0000000000f1' $$, '42501', null, 'posts are not editable');
 delete from public.posts;
-select is((select count(*) from public.posts), 0::bigint, 'owner deletes their post');
+select is((select count(*) from public.posts where id = '00000000-0000-0000-0000-0000000000f1'), 0::bigint, 'owner deletes their post');
 
 select * from finish();
 rollback;
