@@ -1,18 +1,12 @@
 import Link from "next/link";
 import {
-  Dribbble,
   Facebook,
-  Github,
   Globe,
   Instagram,
-  Linkedin,
   MapPin,
   MessageCircle,
   Plus,
   Send,
-  Twitch,
-  Twitter,
-  Youtube,
 } from "lucide-react";
 import { categoryLabel } from "@/lib/options";
 import { contactLinks, formatPrice, postImagePaths, profileImageUrl } from "@/lib/utils";
@@ -38,7 +32,6 @@ export type ProfileData = {
   cover_url: string | null;
   bio: string | null;
   location: string | null;
-  social_links: string[];
   // Public for artists; clients' only reach their own page and request partners (RLS)
   contact_methods?: { telegram: string | null; facebook: string | null; instagram: string | null } | null;
   role: string | null;
@@ -55,17 +48,11 @@ const pillClass =
 const circleClass =
   "flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary transition-colors hover:bg-accent disabled:opacity-50";
 
-// Icon for a social link by host; anything unknown gets a globe
+// Icon for a contact link by host
 const SOCIAL_ICONS: [RegExp, typeof Globe][] = [
   [/(^|\.)instagram\.com$/, Instagram],
-  [/(^|\.)(facebook|fb)\.com$/, Facebook],
-  [/(^|\.)(youtube\.com|youtu\.be)$/, Youtube],
-  [/(^|\.)(twitter|x)\.com$/, Twitter],
-  [/(^|\.)linkedin\.com$/, Linkedin],
-  [/(^|\.)github\.com$/, Github],
-  [/(^|\.)dribbble\.com$/, Dribbble],
-  [/(^|\.)twitch\.tv$/, Twitch],
-  [/(^|\.)(t|telegram)\.me$/, Send],
+  [/(^|\.)facebook\.com$/, Facebook],
+  [/(^|\.)t\.me$/, Send],
 ];
 
 // Profile page after vgen.co: full-bleed cover, a sticky left column (avatar, name, @handle,
@@ -87,10 +74,7 @@ export function ProfileView({
   const name = artist.display_name ?? "Unnamed";
   const { services, portfolio } = artist;
   const posts = artist.posts ?? [];
-  // Social links plus contact handles, minus any the user entered both ways
-  const links = [
-    ...new Set([...artist.social_links, ...contactLinks(artist.contact_methods ?? null).map((l) => l.href)]),
-  ];
+  const links = contactLinks(artist.contact_methods ?? null).map((l) => l.href);
   const isOwn = viewerId === id;
   const isArtist = artist.role === "artist";
   const requestHref = (category?: string) =>

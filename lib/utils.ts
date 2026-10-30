@@ -65,27 +65,6 @@ export function formatPrice(min: number, max: number, currency: string) {
     : `${fmt.format(min)} – ${fmt.format(max)}`;
 }
 
-// One link per line; mirrors the social_links DB checks (http(s) only, max 5).
-// "instagram.com/me" gets https:// so it opens the site instead of a path on ours.
-export function parseSocialLinks(text: string): string[] {
-  const links = text
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean)
-    .map((l) => (/^[a-z][a-z0-9+.-]*:\/\//i.test(l) ? l : `https://${l.replace(/^\/+/, "")}`));
-  if (links.length > 5) throw new Error("At most 5 links");
-  const bad = links.find((l) => {
-    try {
-      const url = new URL(l);
-      return !/^https?:$/.test(url.protocol) || !url.hostname.includes(".");
-    } catch {
-      return true;
-    }
-  });
-  if (bad) throw new Error(`That doesn't look like a link: ${bad}`);
-  return links;
-}
-
 // Profile URLs for contact_methods handles (the DB stores bare handles)
 export function contactLinks(
   contact: { telegram: string | null; facebook: string | null; instagram: string | null } | null,

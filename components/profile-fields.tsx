@@ -1,13 +1,12 @@
 "use client";
 
-import { PrefixInput, fieldClass, pillClass } from "@/components/flow";
-import { Facebook, Instagram, Pencil, Plus, Send, X } from "lucide-react";
+import { PrefixInput } from "@/components/flow";
+import { Facebook, Instagram, Pencil, Send, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 // Profile editing pieces shared by onboarding and /profile (layout after vgen.co).
 
 export const IMAGE_TYPES = "image/png,image/jpeg,image/webp,image/gif";
-export const MAX_LINKS = 5;
 
 export function useObjectUrl(file: File | null) {
   const [url, setUrl] = useState<string | null>(null);
@@ -128,52 +127,6 @@ export function ImagesEditor({
         </label>
       </div>
     </div>
-  );
-}
-
-export function LinksEditor({
-  links,
-  onChange,
-}: {
-  links: string[];
-  onChange: (links: string[]) => void;
-}) {
-  return (
-    <>
-      {links.map((link, i) => (
-        <div key={i} className="flex items-center gap-2">
-          <input
-            aria-label={`Link ${i + 1}`}
-            type="url"
-            inputMode="url"
-            placeholder="instagram.com/yourname"
-            value={link}
-            onChange={(e) =>
-              onChange(links.map((l, j) => (j === i ? e.target.value : l)))
-            }
-            className={fieldClass}
-          />
-          <button
-            type="button"
-            aria-label={`Remove link ${i + 1}`}
-            onClick={() => onChange(links.filter((_, j) => j !== i))}
-            className="flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-secondary"
-          >
-            <X className="size-5" />
-          </button>
-        </div>
-      ))}
-      {links.length < MAX_LINKS && (
-        <button
-          type="button"
-          onClick={() => onChange([...links, ""])}
-          className={pillClass.quiet}
-        >
-          <Plus className="size-5" />
-          Add link
-        </button>
-      )}
-    </>
   );
 }
 

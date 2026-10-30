@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/client";
 import { uploadImage } from "@/lib/upload";
 import {
   cn,
-  parseSocialLinks,
   toUsername,
   usernameError,
 } from "@/lib/utils";
@@ -20,7 +19,6 @@ import {
 import {
   ContactFields,
   ImagesEditor,
-  LinksEditor,
   contactRow,
   useObjectUrl,
   type Contacts,
@@ -34,7 +32,6 @@ export type Profile = {
   bio: string | null;
   avatar_url: string | null;
   cover_url: string | null;
-  social_links: string[];
   location: string | null;
   role: string | null;
   business_name: string | null;
@@ -80,7 +77,6 @@ export function ProfileForm({
   const [location, setLocation] = useState(profile.location ?? "");
   const [businessName, setBusinessName] = useState(profile.business_name ?? "");
   const [businessType, setBusinessType] = useState(profile.business_type ?? "");
-  const [links, setLinks] = useState(profile.social_links);
   const [contacts, setContacts] = useState(initialContacts);
   const [avatar, setAvatar] = useState<File | null>(null);
   const [cover, setCover] = useState<File | null>(null);
@@ -106,9 +102,6 @@ export function ProfileForm({
       if (badUsername) throw new Error(badUsername);
       if (isClient && !businessType)
         throw new Error("Choose what best describes you.");
-      const socialLinks = parseSocialLinks(
-        links.filter((l) => l.trim()).join("\n"),
-      );
       const contactValues = contactRow(contacts);
 
       const { error: contactError } = await supabase
@@ -123,7 +116,6 @@ export function ProfileForm({
           username: username || null,
           bio: bio.trim() || null,
           location: location || null,
-          social_links: socialLinks,
           ...(isClient && {
             business_name: businessName.trim() || null,
             business_type: businessType,
@@ -261,18 +253,11 @@ export function ProfileForm({
       </Section>
 
       <Section
-        title="Socials + links"
-        description="Shown on your public profile."
-      >
-        <LinksEditor links={links} onChange={setLinks} />
-      </Section>
-
-      <Section
-        title="Contact methods"
+        title="Social links"
         description={
           isClient
             ? "Private. Only shared with people you have a commission request with."
-            : "Shown on your profile next to your links."
+            : "Shown on your profile so clients can reach you."
         }
       >
         <ContactFields contacts={contacts} onChange={setContacts} />

@@ -3,7 +3,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { uploadImage } from "@/lib/upload";
 import {
-  parseSocialLinks,
   profileHref,
   toUsername,
   usernameError,
@@ -34,7 +33,6 @@ import {
   IMAGE_TYPES,
   ImageTile,
   ImagesEditor,
-  LinksEditor,
   contactRow,
   useObjectUrl,
 } from "@/components/profile-fields";
@@ -48,7 +46,6 @@ type Step =
   | "services"
   | "interests"
   | "portfolio"
-  | "socials"
   | "contacts";
 
 const MAX_PORTFOLIO = 12;
@@ -91,7 +88,6 @@ export function OnboardingForm({
   // portfolio
   const [portfolio, setPortfolio] = useState<File[]>([]);
   // socials + contacts
-  const [links, setLinks] = useState<string[]>([]);
   const [contacts, setContacts] = useState(EMPTY_CONTACTS);
 
   const [error, setError] = useState<string | null>(null);
@@ -105,8 +101,8 @@ export function OnboardingForm({
   const coverSrc = coverPreview ?? (coverRemoved ? null : initial.cover_url);
 
   const steps: Step[] = isArtist
-    ? ["look", "details", "services", "portfolio", "socials", "contacts"]
-    : ["look", "details", "interests", "socials", "contacts"];
+    ? ["look", "details", "services", "portfolio", "contacts"]
+    : ["look", "details", "interests", "contacts"];
   const step = steps[stepIndex];
 
   const goTo = (i: number) => {
@@ -185,7 +181,6 @@ export function OnboardingForm({
       if (step === "services") buildServices();
       if (step === "portfolio" && portfolio.length === 0)
         throw new Error("Add at least one image of your work.");
-      if (step === "socials") parseSocialLinks(links.join("\n"));
       if (step === "contacts") return await finish();
       goTo(stepIndex + 1);
     } catch (err: unknown) {
@@ -198,7 +193,6 @@ export function OnboardingForm({
     const supabase = createClient();
     setBusy(true);
     const contactValues = contactRow(contacts);
-    const socialLinks = parseSocialLinks(links.join("\n"));
     let artistFields = {};
     if (isArtist) {
       const services = buildServices();
@@ -236,7 +230,6 @@ export function OnboardingForm({
         bio: bio.trim() || null,
         location,
         categories,
-        social_links: socialLinks,
         ...(avatar && {
           avatar_url: await uploadImage(supabase, `${userId}/avatar`, avatar, 800),
         }),
@@ -352,11 +345,6 @@ export function OnboardingForm({
               id={id}
               maxLength={500}
               rows={4}
-              placeholder={
-                isArtist
-                  ? "Write a little so clients get to know you: who you are, your specialties, languages, tools…"
-                  : "Write a little so artists get to know you and what you're working on…"
-              }
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               className={`${fieldClass} h-auto min-h-32 resize-y py-3`}
@@ -531,17 +519,8 @@ export function OnboardingForm({
       `Upload 1–${MAX_PORTFOLIO} pieces. They appear on your profile and in the home feed.`,
     );
 
-  if (step === "socials")
-    return card(
-      "Socials + links",
-      <LinksEditor links={links} onChange={setLinks} />,
-      links.length === 0
-        ? "Optional. Add your website, Behance, or any page that shows your work."
-        : undefined,
-    );
-
   return card(
-    "Would you like to add any other contact methods?",
+    "Social links",
     <ContactFields contacts={contacts} onChange={setContacts} />,
     isArtist
       ? "Optional. Shown on your profile so clients can reach you."

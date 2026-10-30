@@ -16,7 +16,7 @@ async function Profile() {
     supabase
       .from("profiles")
       .select(
-        "display_name, username, bio, avatar_url, cover_url, social_links, location, role, business_name, business_type",
+        "display_name, username, bio, avatar_url, cover_url, location, role, business_name, business_type",
       )
       .eq("id", user.sub)
       .maybeSingle(),
