@@ -28,6 +28,17 @@ export const toUsername = (raw: string) =>
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const isUuid = (s: string) => UUID.test(s);
 
+// Public URL of a file in the profile-images bucket (posts store the path, not the URL)
+export const profileImageUrl = (path: string) =>
+  `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-images/${path}`;
+
+// RLS rejects writes between blocked users (and other forbidden writes) with 42501;
+// show that plainly instead of "new row violates row-level security policy".
+export function errorText(err: unknown, fallback: string) {
+  if ((err as { code?: unknown } | null)?.code === "42501") return "You can't contact this person.";
+  return err instanceof Error ? err.message : fallback;
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }

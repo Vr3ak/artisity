@@ -24,20 +24,27 @@ async function Artist({
   const { data: artist, error } = await supabase
     .from("profiles")
     .select(
-      "id, username, display_name, avatar_url, cover_url, bio, location, social_links, role, portfolio, services(category, currency, price_min, price_max)",
+      "id, username, display_name, avatar_url, cover_url, bio, location, social_links, role, portfolio, services(category, currency, price_min, price_max), posts(id, title, image_path)",
     )
     .eq(isUuid(key) ? "id" : "username", decodeURIComponent(key).toLowerCase())
     .eq("role", "artist")
+    .order("created_at", { referencedTable: "posts", ascending: false })
     .maybeSingle();
   if (error) throw error;
   if (!artist) notFound();
   const { data: claims } = await supabase.auth.getClaims();
+  const viewerId = claims?.claims.sub;
+  // RLS returns only the viewer's own blocks
+  const { data: block } = viewerId
+    ? await supabase.from("blocks").select("blocked_id").eq("blocked_id", artist.id).maybeSingle()
+    : { data: null };
 
   return (
     <ProfileView
       profile={artist as ProfileData}
       tab={tab}
-      viewerId={claims?.claims.sub}
+      viewerId={viewerId}
+      blocked={!!block}
     />
   );
 }

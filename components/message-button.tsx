@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { errorText } from "@/lib/utils";
 import { openConversation } from "@/lib/conversations";
 import { MessageCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -29,7 +30,7 @@ export function MessageButton({
       const id = await openConversation(createClient(), userId, artistId);
       router.push(`/messages/${id}`);
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(errorText(error, "An error occurred"));
       setIsLoading(false);
     }
   };

@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { loadChat } from "@/lib/chat";
 import { RealtimeChat } from "@/components/realtime-chat";
+import { SafetyMenu } from "@/components/safety-menu";
 import { Avatar } from "@/components/tab-bar";
 import { profileHref } from "@/lib/utils";
 
@@ -18,6 +19,12 @@ async function Chat({ params }: { params: Promise<{ id: string }> }) {
   const chat = await loadChat(supabase, id);
   if (!chat) notFound();
   const other = chat.people.find((p) => p.id !== user.sub)!;
+  // RLS returns only the viewer's own blocks
+  const { data: block } = await supabase
+    .from("blocks")
+    .select("blocked_id")
+    .eq("blocked_id", other.id)
+    .maybeSingle();
 
   return (
     <>
@@ -38,6 +45,14 @@ async function Chat({ params }: { params: Promise<{ id: string }> }) {
           </span>
           <h1 className="truncate font-semibold">{chat.names[other.id]}</h1>
         </Link>
+        <div className="ml-auto">
+          <SafetyMenu
+            userId={other.id}
+            name={chat.names[other.id]}
+            blocked={!!block}
+            className="flex size-10 items-center justify-center rounded-full hover:bg-secondary"
+          />
+        </div>
       </header>
       <div className="min-h-0 flex-1">
         <RealtimeChat
@@ -45,6 +60,7 @@ async function Chat({ params }: { params: Promise<{ id: string }> }) {
           userId={user.sub}
           partnerName={chat.names[other.id]}
           messages={chat.messages}
+          blocked={!!block}
         />
       </div>
     </>

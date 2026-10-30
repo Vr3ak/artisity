@@ -20,7 +20,11 @@ create policy "conversations: select participant" on public.conversations
 
 create policy "conversations: insert own" on public.conversations
   for insert to authenticated
-  with check ((select auth.uid()) = client_id and private.is_artist(artist_id));
+  with check (
+    (select auth.uid()) = client_id
+    and private.is_artist(artist_id)
+    and not private.is_blocked(client_id, artist_id)
+  );
 
 revoke all on public.conversations from anon, authenticated;
 grant select, insert on public.conversations to authenticated;
@@ -61,7 +65,9 @@ create policy "messages: insert participant" on public.messages
     (select auth.uid()) = sender_id
     and exists (
       select 1 from public.conversations c
-      where c.id = conversation_id and (select auth.uid()) in (c.client_id, c.artist_id)
+      where c.id = conversation_id
+        and (select auth.uid()) in (c.client_id, c.artist_id)
+        and not private.is_blocked(c.client_id, c.artist_id)
     )
   );
 

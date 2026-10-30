@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Heart, Menu, MessageCircle } from "lucide-react";
+import { Heart, Menu, MessageCircle, Plus } from "lucide-react";
 import { Button } from "./ui/button";
 import { NavMenu } from "./nav-menu";
 import { Avatar, TabBar } from "./tab-bar";
@@ -74,6 +74,15 @@ export async function TopNav() {
 
       <div className="ml-auto flex items-center gap-2">
         <div className="hidden items-center gap-2 md:flex">
+          {role === "artist" && (
+            <Link
+              href="/posts/new"
+              className="flex h-10 items-center gap-1.5 rounded-full bg-primary pl-3 pr-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <Plus className="size-5" />
+              Post
+            </Link>
+          )}
           <Link
             href="/messages"
             aria-label="Messages"

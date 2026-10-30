@@ -3,7 +3,7 @@
 import { ArrowUp, Check, Loader2, Mic, Paperclip, Pencil, Trash2, X } from 'lucide-react'
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 
-import { cn } from '@/lib/utils'
+import { cn, errorText } from '@/lib/utils'
 import { ChatMessageItem, TypingBubble, attachmentKind, formatBytes } from '@/components/chat-message'
 import { useChatScroll } from '@/hooks/use-chat-scroll'
 import { MAX_ATTACHMENT_BYTES, type ChatMessage } from '@/lib/chat'
@@ -14,6 +14,8 @@ interface RealtimeChatProps {
   userId: string
   partnerName: string
   messages?: ChatMessage[]
+  // The viewer has blocked the partner: the composer becomes a notice
+  blocked?: boolean
 }
 
 const MAX_RECORDING_S = 300
@@ -37,16 +39,15 @@ function dayLabel(iso: string) {
   })
 }
 
-const errorText = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
-
 /**
  * Realtime chat for one conversation: text, attachments, voice notes, edit/delete, typing indicator
  * @param conversationId - public.conversations id
  * @param userId - the viewer's id, to align their own messages
  * @param partnerName - the other participant's display name
  * @param messages - messages already loaded from the database
+ * @param blocked - the viewer has blocked the partner
  */
-export const RealtimeChat = ({ conversationId, userId, partnerName, messages: initialMessages = [] }: RealtimeChatProps) => {
+export const RealtimeChat = ({ conversationId, userId, partnerName, messages: initialMessages = [], blocked = false }: RealtimeChatProps) => {
   const { containerRef, scrollToBottom, isNearBottom } = useChatScroll()
   const { messages, isConnected, partnerTyping, setTyping, sendMessage, editMessage, deleteMessage } = useRealtimeChat({
     conversationId,
@@ -246,7 +247,7 @@ export const RealtimeChat = ({ conversationId, userId, partnerName, messages: in
             {error}
           </p>
         )}
-        {editing && (
+        {editing && !blocked && (
           <div className="mb-2 flex items-center gap-3 rounded-xl bg-secondary px-3 py-2 text-sm">
             <Pencil className="size-4 shrink-0 text-primary-ink" />
             <span className="min-w-0 flex-1">
@@ -273,7 +274,11 @@ export const RealtimeChat = ({ conversationId, userId, partnerName, messages: in
           </div>
         )}
 
-        {recordingFor !== null ? (
+        {blocked ? (
+          <p className="px-2 py-2.5 text-center text-sm text-muted-foreground">
+            You blocked {partnerName}. Unblock them from the menu above to send messages.
+          </p>
+        ) : recordingFor !== null ? (
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => stopRecording(true)} aria-label="Discard recording" className={cn(iconButton, 'text-destructive hover:bg-secondary')}>
               <Trash2 className="size-5" />

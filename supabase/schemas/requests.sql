@@ -33,6 +33,7 @@ create policy "requests: insert own" on public.requests
     (select auth.uid()) = client_id
     and status = 'pending'
     and private.is_artist(artist_id)
+    and not private.is_blocked(client_id, artist_id)
   );
 
 -- Which transitions each side may make is enforced by private.check_request_transition.
