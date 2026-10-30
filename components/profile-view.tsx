@@ -32,7 +32,7 @@ export type ProfileData = {
   bio: string | null;
   location: string | null;
   // Public for artists; clients' only reach their own page and request partners (RLS)
-  contact_methods?: { telegram: string | null; facebook: string | null; instagram: string | null } | null;
+  contact_methods?: Parameters<typeof contactLinks>[0];
   role: string | null;
   business_name?: string | null;
   business_type?: string | null;

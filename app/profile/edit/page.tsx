@@ -21,7 +21,7 @@ async function Profile() {
       .maybeSingle(),
     supabase
       .from("contact_methods")
-      .select("telegram, facebook, instagram")
+      .select("telegram, facebook, instagram, facebook_name")
       .eq("user_id", user.sub)
       .maybeSingle(),
   ]);
@@ -49,6 +49,7 @@ async function Profile() {
           telegram: contact?.telegram ?? "",
           facebook: contact?.facebook ?? "",
           instagram: contact?.instagram ?? "",
+          facebook_name: contact?.facebook_name ?? "",
         }}
         userId={user.sub}
       />

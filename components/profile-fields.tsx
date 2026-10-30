@@ -3,7 +3,7 @@
 import { contactHandle } from "@/lib/utils";
 import { PrefixInput } from "@/components/flow";
 import { Facebook, Instagram, Pencil, Send, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 // Profile editing pieces shared by onboarding and /profile (layout after vgen.co).
 
@@ -160,16 +160,17 @@ export const CONTACTS = [
     host: /(^|\.)instagram\.com$/i,
   },
 ] as const;
-export type Contacts = Record<(typeof CONTACTS)[number]["key"], string>;
+export type Contacts = Record<(typeof CONTACTS)[number]["key"] | "facebook_name", string>;
 export const EMPTY_CONTACTS: Contacts = {
   telegram: "",
   facebook: "",
   instagram: "",
+  facebook_name: "",
 };
 
 // Typed values → contact_methods row (null for blanks); throws a readable error for a bad handle
 export function contactRow(contacts: Contacts) {
-  return Object.fromEntries(
+  const row = Object.fromEntries(
     CONTACTS.map(({ key, label, prefix, re, host }) => {
       const v = contactHandle(contacts[key], host);
       if (v && !re.test(v))
@@ -177,6 +178,7 @@ export function contactRow(contacts: Contacts) {
       return [key, v || null];
     }),
   );
+  return { ...row, facebook_name: (row.facebook && contacts.facebook_name.trim()) || null };
 }
 
 export function ContactFields({
@@ -190,28 +192,42 @@ export function ContactFields({
   return (
     <div className="flex flex-col gap-3">
       {CONTACTS.map(({ key, label, prefix, icon: Icon, host }) => (
-        <PrefixInput
-          key={key}
-          aria-label={`${label} username`}
-          icon={<Icon className="size-5 shrink-0 text-muted-foreground" />}
-          prefix={prefix}
-          autoCapitalize="none"
-          spellCheck={false}
-          value={contacts[key]}
-          onChange={(e) => {
-            const value = e.target.value;
-            onChange((c) => ({ ...c, [key]: value }));
-          }}
-          // A pasted profile link shows as just the username; typed links are trimmed on blur
-          onPaste={(e) => {
-            const pasted = e.clipboardData.getData("text").trim();
-            const handle = contactHandle(pasted, host);
-            if (handle === pasted) return;
-            e.preventDefault();
-            onChange((c) => ({ ...c, [key]: handle }));
-          }}
-          onBlur={() => onChange((c) => ({ ...c, [key]: contactHandle(c[key], host) }))}
-        />
+        <Fragment key={key}>
+          <PrefixInput
+            aria-label={`${label} username`}
+            icon={<Icon className="size-5 shrink-0 text-muted-foreground" />}
+            prefix={prefix}
+            autoCapitalize="none"
+            spellCheck={false}
+            value={contacts[key]}
+            onChange={(e) => {
+              const value = e.target.value;
+              onChange((c) => ({ ...c, [key]: value }));
+            }}
+            // A pasted profile link shows as just the username; typed links are trimmed on blur
+            onPaste={(e) => {
+              const pasted = e.clipboardData.getData("text").trim();
+              const handle = contactHandle(pasted, host);
+              if (handle === pasted) return;
+              e.preventDefault();
+              onChange((c) => ({ ...c, [key]: handle }));
+            }}
+            onBlur={() => onChange((c) => ({ ...c, [key]: contactHandle(c[key], host) }))}
+          />
+          {key === "facebook" && contacts.facebook.trim() && (
+            <PrefixInput
+              aria-label="Name on Facebook"
+              placeholder="Name on Facebook (optional)"
+              maxLength={80}
+              className="pl-7"
+              value={contacts.facebook_name}
+              onChange={(e) => {
+                const value = e.target.value;
+                onChange((c) => ({ ...c, facebook_name: value }));
+              }}
+            />
+          )}
+        </Fragment>
       ))}
     </div>
   );

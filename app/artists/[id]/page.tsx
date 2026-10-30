@@ -25,7 +25,7 @@ async function Artist({
   const { data: artist, error } = await supabase
     .from("profiles")
     .select(
-      "id, username, display_name, avatar_url, cover_url, bio, location, role, portfolio, services(category, currency, price_min, price_max), posts(id, title, image_path, image_count), contact_methods(telegram, facebook, instagram)",
+      "id, username, display_name, avatar_url, cover_url, bio, location, role, portfolio, services(category, currency, price_min, price_max), posts(id, title, image_path, image_count), contact_methods(telegram, facebook, instagram, facebook_name)",
     )
     .eq(isUuid(key) ? "id" : "username", decodeURIComponent(key).toLowerCase())
     .eq("role", "artist")
