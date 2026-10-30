@@ -17,8 +17,10 @@ async function NewPost() {
     .from("profiles")
     .select("role, categories, services(category)")
     .eq("id", user.sub)
-    .single();
+    .maybeSingle();
   if (error) throw error;
+  // No row: the account is gone (deleted elsewhere) but this browser's token hasn't expired
+  if (!profile) redirect("/auth/login");
   if (!profile.role) redirect("/onboarding");
   if (profile.role !== "artist") notFound();
 

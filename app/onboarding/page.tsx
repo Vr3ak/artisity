@@ -18,8 +18,10 @@ async function Onboarding({
     .from("profiles")
     .select("display_name, username, avatar_url, cover_url, role")
     .eq("id", user.sub)
-    .single();
+    .maybeSingle();
   if (error) throw error;
+  // No row: the account is gone (deleted elsewhere) but this browser's token hasn't expired
+  if (!profile) redirect("/auth/login");
   // Role is set by the final onboarding write, so a set role means onboarding is done
   if (profile.role) redirect("/");
 

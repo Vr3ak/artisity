@@ -26,8 +26,10 @@ async function Profile({ searchParams }: { searchParams: Search }) {
     )
     .eq("id", user.sub)
     .order("created_at", { referencedTable: "posts", ascending: false })
-    .single();
+    .maybeSingle();
   if (error) throw error;
+  // No row: the account is gone (deleted elsewhere) but this browser's token hasn't expired
+  if (!profile) redirect("/auth/login");
   if (!profile.role) redirect("/onboarding");
 
   return (

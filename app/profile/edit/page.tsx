@@ -19,7 +19,7 @@ async function Profile() {
         "display_name, username, bio, avatar_url, cover_url, social_links, location, role, business_name, business_type",
       )
       .eq("id", user.sub)
-      .single(),
+      .maybeSingle(),
     supabase
       .from("contact_methods")
       .select("telegram, facebook, instagram")
@@ -27,6 +27,8 @@ async function Profile() {
       .maybeSingle(),
   ]);
   if (error) throw error;
+  // No row: the account is gone (deleted elsewhere) but this browser's token hasn't expired
+  if (!profile) redirect("/auth/login");
   if (!profile.role) redirect("/onboarding");
 
   return (
