@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { RequestForm } from "@/components/request-form";
+import { Loading } from "@/components/loading";
 
 async function NewRequest({
   searchParams,
@@ -47,7 +48,7 @@ export default function Page({
 }) {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-8 p-5">
-      <Suspense>
+      <Suspense fallback={<Loading />}>
         <NewRequest searchParams={searchParams} />
       </Suspense>
     </main>

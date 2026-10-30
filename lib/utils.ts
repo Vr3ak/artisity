@@ -32,6 +32,10 @@ export const isUuid = (s: string) => UUID.test(s);
 export const profileImageUrl = (path: string) =>
   `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-images/${path}`;
 
+// A post's image paths: the cover is image_path, the rest add -1 … -9 (see supabase/schemas/posts.sql)
+export const postImagePaths = (imagePath: string, count: number) =>
+  Array.from({ length: count }, (_, i) => (i ? `${imagePath}-${i}` : imagePath));
+
 // RLS rejects writes between blocked users (and other forbidden writes) with 42501;
 // show that plainly instead of "new row violates row-level security policy".
 export function errorText(err: unknown, fallback: string) {
@@ -55,14 +59,23 @@ export function formatPrice(min: number, max: number, currency: string) {
     : `${fmt.format(min)} – ${fmt.format(max)}`;
 }
 
-// One link per line; mirrors the social_links DB checks (http(s) only, max 5)
+// One link per line; mirrors the social_links DB checks (http(s) only, max 5).
+// "instagram.com/me" gets https:// so it opens the site instead of a path on ours.
 export function parseSocialLinks(text: string): string[] {
   const links = text
     .split("\n")
     .map((l) => l.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((l) => (/^[a-z][a-z0-9+.-]*:\/\//i.test(l) ? l : `https://${l.replace(/^\/+/, "")}`));
   if (links.length > 5) throw new Error("At most 5 links");
-  const bad = links.find((l) => !/^https?:\/\//i.test(l));
-  if (bad) throw new Error(`Links must start with https://: ${bad}`);
+  const bad = links.find((l) => {
+    try {
+      const url = new URL(l);
+      return !/^https?:$/.test(url.protocol) || !url.hostname.includes(".");
+    } catch {
+      return true;
+    }
+  });
+  if (bad) throw new Error(`That doesn't look like a link: ${bad}`);
   return links;
 }

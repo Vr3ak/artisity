@@ -1,7 +1,7 @@
 -- npx supabase test db --local
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(8);
+select plan(9);
 
 -- artist (a), second artist (b), client (c)
 insert into auth.users (id, email) values
@@ -30,6 +30,10 @@ select throws_ok($$
   insert into public.posts (id, image_path, title)
   values ('00000000-0000-0000-0000-0000000000f3', '00000000-0000-0000-0000-00000000000a/posts/00000000-0000-0000-0000-0000000000f3', '')
 $$, '23514', null, 'title required');
+select throws_ok($$
+  insert into public.posts (id, image_path, image_count, title)
+  values ('00000000-0000-0000-0000-0000000000f5', '00000000-0000-0000-0000-00000000000a/posts/00000000-0000-0000-0000-0000000000f5', 11, 'too many')
+$$, '23514', null, 'at most 10 images');
 
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000c');
 select throws_ok($$

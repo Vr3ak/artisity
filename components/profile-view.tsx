@@ -14,7 +14,8 @@ import {
   Youtube,
 } from "lucide-react";
 import { categoryLabel } from "@/lib/options";
-import { formatPrice, profileImageUrl } from "@/lib/utils";
+import { formatPrice, postImagePaths, profileImageUrl } from "@/lib/utils";
+import { ImageCarousel } from "@/components/image-carousel";
 import { MessageButton } from "@/components/message-button";
 import { SafetyMenu } from "@/components/safety-menu";
 
@@ -43,7 +44,7 @@ export type ProfileData = {
   portfolio: string[];
   services: Service[];
   // Newest first; only artists have posts
-  posts?: { id: string; title: string; image_path: string }[];
+  posts?: { id: string; title: string; image_path: string; image_count: number }[];
 };
 
 const pillClass =
@@ -319,14 +320,11 @@ export function ProfileView({
                     href={`/posts/${post.id}`}
                     className="group relative block aspect-square overflow-hidden rounded-2xl bg-secondary outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={profileImageUrl(post.image_path)}
+                    <ImageCarousel
+                      images={postImagePaths(post.image_path, post.image_count).map(profileImageUrl)}
                       alt={post.title}
-                      loading="lazy"
-                      className="size-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03] motion-reduce:transition-none"
                     />
-                    <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 to-transparent px-3 pb-2.5 pt-8 text-sm font-semibold text-white">
+                    <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 to-transparent px-3 pb-2.5 pt-8 text-sm font-semibold text-white">
                       {post.title}
                     </span>
                   </Link>

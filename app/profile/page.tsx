@@ -1,3 +1,4 @@
+import { Loading } from "@/components/loading";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
@@ -21,7 +22,7 @@ async function Profile({ searchParams }: { searchParams: Search }) {
   const { data: profile, error } = await supabase
     .from("profiles")
     .select(
-      "id, username, display_name, avatar_url, cover_url, bio, location, social_links, role, business_name, business_type, portfolio, services(category, currency, price_min, price_max), posts(id, title, image_path)",
+      "id, username, display_name, avatar_url, cover_url, bio, location, social_links, role, business_name, business_type, portfolio, services(category, currency, price_min, price_max), posts(id, title, image_path, image_count)",
     )
     .eq("id", user.sub)
     .order("created_at", { referencedTable: "posts", ascending: false })
@@ -41,7 +42,7 @@ async function Profile({ searchParams }: { searchParams: Search }) {
 export default function Page({ searchParams }: { searchParams: Search }) {
   return (
     <main className="w-full">
-      <Suspense>
+      <Suspense fallback={<Loading />}>
         <Profile searchParams={searchParams} />
       </Suspense>
     </main>

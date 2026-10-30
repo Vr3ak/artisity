@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { categoryLabel } from "@/lib/options";
 import { formatPrice } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Loading } from "@/components/loading";
 
 type Request = {
   id: string;
@@ -75,7 +76,7 @@ export default function Page() {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-5">
       <h1 className="text-2xl font-semibold">Requests</h1>
-      <Suspense>
+      <Suspense fallback={<Loading />}>
         <Requests />
       </Suspense>
     </main>

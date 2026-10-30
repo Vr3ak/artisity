@@ -11,9 +11,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
+import { Loader2, MoreHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 
 // "More" menu on a profile or chat: report the user, or block/unblock them.
 // blocked = the viewer has blocked this user (being blocked by them is never revealed).
@@ -33,19 +33,22 @@ export function SafetyMenu({
   const router = useRouter();
   const close = () => setDialog(null);
 
-  const unblock = async () => {
-    setError(null);
-    const { error } = await createClient().from("blocks").delete().eq("blocked_id", userId);
-    if (error) return setError(errorText(error, "Couldn't unblock. Try again."));
-    router.refresh();
-  };
+  // The transition stays pending through the refresh, so the spinner lasts until the page updates
+  const [unblocking, startUnblock] = useTransition();
+  const unblock = () =>
+    startUnblock(async () => {
+      setError(null);
+      const { error } = await createClient().from("blocks").delete().eq("blocked_id", userId);
+      if (error) return setError(errorText(error, "Couldn't unblock. Try again."));
+      router.refresh();
+    });
 
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button type="button" aria-label={`More options for ${name}`} title="More" className={className}>
-            <MoreHorizontal className="size-5" />
+          <button type="button" aria-label={`More options for ${name}`} title="More" disabled={unblocking} className={className}>
+            {unblocking ? <Loader2 className="size-5 animate-spin" /> : <MoreHorizontal className="size-5" />}
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">

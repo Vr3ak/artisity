@@ -20,6 +20,33 @@ export function useObjectUrl(file: File | null) {
   return url;
 }
 
+// Square preview of a picked file with a remove button, for multi-image pickers
+export function ImageTile({
+  file,
+  onRemove,
+}: {
+  file: File;
+  onRemove: () => void;
+}) {
+  const url = useObjectUrl(file);
+  return (
+    <li className="relative aspect-square overflow-hidden rounded-xl bg-secondary">
+      {url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={url} alt={file.name} className="size-full object-cover" />
+      )}
+      <button
+        type="button"
+        aria-label={`Remove ${file.name}`}
+        onClick={onRemove}
+        className="absolute right-1.5 top-1.5 flex size-8 items-center justify-center rounded-full bg-nav/80 hover:bg-nav"
+      >
+        <X className="size-4" />
+      </button>
+    </li>
+  );
+}
+
 const roundButton =
   "flex size-11 items-center justify-center rounded-full bg-foreground text-background shadow-md hover:bg-foreground/90";
 
@@ -100,8 +127,8 @@ export function ImagesEditor({
           />
         </label>
         <p className="text-xs text-muted-foreground">
-          Cover 1500×500 and picture 400×400 look best. PNG, JPEG, WebP or GIF,
-          up to 5 MB.
+          Cover 1500×500 and picture 400×400 look best. PNG, JPEG, WebP or GIF;
+          large images are resized, GIFs up to 7 MB.
         </p>
       </div>
     </div>
@@ -123,7 +150,7 @@ export function LinksEditor({
             aria-label={`Link ${i + 1}`}
             type="url"
             inputMode="url"
-            placeholder="https://"
+            placeholder="instagram.com/yourname"
             value={link}
             onChange={(e) =>
               onChange(links.map((l, j) => (j === i ? e.target.value : l)))

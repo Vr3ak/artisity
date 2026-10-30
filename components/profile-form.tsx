@@ -138,7 +138,7 @@ export function ProfileForm({
             business_type: businessType,
           }),
           ...(avatar && {
-            avatar_url: await uploadImage(supabase, `${userId}/avatar`, avatar),
+            avatar_url: await uploadImage(supabase, `${userId}/avatar`, avatar, 800),
           }),
           ...(cover
             ? {

@@ -4,10 +4,11 @@ import { Suspense } from "react";
 import { MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { categoryLabel } from "@/lib/options";
-import { profileHref, profileImageUrl } from "@/lib/utils";
+import { postImagePaths, profileHref, profileImageUrl } from "@/lib/utils";
 import { Avatar } from "@/components/tab-bar";
 import { DeletePostButton } from "@/components/delete-post-button";
 import { MessageButton } from "@/components/message-button";
+import { Loading } from "@/components/loading";
 
 type Artist = { id: string; username: string | null; display_name: string | null; avatar_url: string | null };
 
@@ -22,7 +23,7 @@ async function Post({ params }: { params: Promise<{ id: string }> }) {
   const { data: post, error } = await supabase
     .from("posts")
     .select(
-      "id, title, caption, category, image_path, created_at, artist:profiles!posts_artist_id_fkey(id, username, display_name, avatar_url)",
+      "id, title, caption, category, image_path, image_count, created_at, artist:profiles!posts_artist_id_fkey(id, username, display_name, avatar_url)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -32,6 +33,7 @@ async function Post({ params }: { params: Promise<{ id: string }> }) {
   if (!post?.artist) notFound();
 
   const artist = post.artist as unknown as Artist;
+  const imagePaths = postImagePaths(post.image_path, post.image_count);
   const name = artist.display_name ?? "Unnamed";
   const { data: claims } = await supabase.auth.getClaims();
   const viewerId = claims?.claims.sub;
@@ -42,13 +44,19 @@ async function Post({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <article className="grid gap-8 md:grid-cols-[3fr_2fr] md:gap-12">
-      <div className="overflow-hidden rounded-3xl bg-secondary">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={profileImageUrl(post.image_path)}
-          alt={post.title}
-          className="max-h-[80dvh] w-full object-contain"
-        />
+      {/* ponytail: images stacked like a Behance project; add a carousel if long posts feel heavy */}
+      <div className="flex flex-col gap-3">
+        {imagePaths.map((path, i) => (
+          <div key={path} className="overflow-hidden rounded-3xl bg-secondary">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={profileImageUrl(path)}
+              alt={imagePaths.length > 1 ? `${post.title}, image ${i + 1} of ${imagePaths.length}` : post.title}
+              loading={i ? "lazy" : undefined}
+              className="max-h-[80dvh] w-full object-contain"
+            />
+          </div>
+        ))}
       </div>
 
       <div className="flex flex-col gap-5 md:sticky md:top-20 md:self-start">
@@ -81,7 +89,7 @@ async function Post({ params }: { params: Promise<{ id: string }> }) {
           {isOwn ? (
             <DeletePostButton
               postId={post.id}
-              imagePath={post.image_path}
+              imagePaths={imagePaths}
               className={`${pillClass} border border-input text-destructive hover:bg-secondary`}
             />
           ) : (
@@ -110,7 +118,7 @@ async function Post({ params }: { params: Promise<{ id: string }> }) {
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 md:px-6 md:pt-10">
-      <Suspense>
+      <Suspense fallback={<Loading />}>
         <Post params={params} />
       </Suspense>
     </main>

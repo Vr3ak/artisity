@@ -28,11 +28,12 @@ import {
   fieldClass,
   pillClass,
 } from "@/components/flow";
-import { ImagePlus, X } from "lucide-react";
+import { ImagePlus } from "lucide-react";
 import {
   ContactFields,
   EMPTY_CONTACTS,
   IMAGE_TYPES,
+  ImageTile,
   ImagesEditor,
   LinksEditor,
   contactRow,
@@ -238,7 +239,7 @@ export function OnboardingForm({
         categories,
         social_links: socialLinks,
         ...(avatar && {
-          avatar_url: await uploadImage(supabase, `${userId}/avatar`, avatar),
+          avatar_url: await uploadImage(supabase, `${userId}/avatar`, avatar, 800),
         }),
         ...(cover
           ? { cover_url: await uploadImage(supabase, `${userId}/cover`, cover) }
@@ -500,7 +501,7 @@ export function OnboardingForm({
       "Show your work",
       <ul className="grid grid-cols-3 gap-2">
         {portfolio.map((f, i) => (
-          <PortfolioTile
+          <ImageTile
             key={`${f.name}-${f.lastModified}-${i}`}
             file={f}
             onRemove={() => setPortfolio((ps) => ps.filter((_, j) => j !== i))}
@@ -544,31 +545,5 @@ export function OnboardingForm({
     "Would you like to add any other contact methods?",
     <ContactFields contacts={contacts} onChange={setContacts} />,
     "Optional. Only shared with people you have a commission request with.",
-  );
-}
-
-function PortfolioTile({
-  file,
-  onRemove,
-}: {
-  file: File;
-  onRemove: () => void;
-}) {
-  const url = useObjectUrl(file);
-  return (
-    <li className="relative aspect-square overflow-hidden rounded-xl bg-secondary">
-      {url && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt={file.name} className="size-full object-cover" />
-      )}
-      <button
-        type="button"
-        aria-label={`Remove ${file.name}`}
-        onClick={onRemove}
-        className="absolute right-1.5 top-1.5 flex size-8 items-center justify-center rounded-full bg-nav/80 hover:bg-nav"
-      >
-        <X className="size-4" />
-      </button>
-    </li>
   );
 }

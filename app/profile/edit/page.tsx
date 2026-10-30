@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/components/profile-form";
 import { DeleteAccount } from "@/components/delete-account";
+import { Loading } from "@/components/loading";
 
 async function Profile() {
   const supabase = await createClient();
@@ -58,7 +59,7 @@ async function Profile() {
 export default function Page() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6 md:py-10">
-      <Suspense>
+      <Suspense fallback={<Loading />}>
         <Profile />
       </Suspense>
     </main>

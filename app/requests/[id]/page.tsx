@@ -8,6 +8,7 @@ import { findConversation } from "@/lib/conversations";
 import { Badge } from "@/components/ui/badge";
 import { RealtimeChat } from "@/components/realtime-chat";
 import { RequestActions } from "@/components/request-actions";
+import { Loading } from "@/components/loading";
 
 async function Request({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -136,7 +137,7 @@ async function Request({ params }: { params: Promise<{ id: string }> }) {
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-5">
-      <Suspense>
+      <Suspense fallback={<Loading />}>
         <Request params={params} />
       </Suspense>
     </main>

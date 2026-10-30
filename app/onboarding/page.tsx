@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingForm } from "@/components/onboarding-form";
+import { Loading } from "@/components/loading";
 
 async function Onboarding({
   searchParams,
@@ -41,7 +42,7 @@ export default function Page({
     // Centered like the auth cards, between the top bar and (below md) the tab bar
     <main className="flex min-h-[calc(100svh-8rem)] w-full items-center justify-center p-4 sm:p-6 md:min-h-[calc(100svh-4rem)] md:p-10">
       <div className="w-full max-w-md">
-        <Suspense>
+        <Suspense fallback={<Loading />}>
           <Onboarding searchParams={searchParams} />
         </Suspense>
       </div>
