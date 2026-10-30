@@ -75,6 +75,11 @@ export function NavMenu({
       <DropdownMenuContent align="end" side={side} className="w-52">
         {signedIn ? (
           <>
+            {role === "artist" && (
+              <DropdownMenuItem asChild>
+                <Link href="/posts/new">New post</Link>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem asChild>
               <Link href="/requests">Requests</Link>
             </DropdownMenuItem>

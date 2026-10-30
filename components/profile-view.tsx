@@ -8,13 +8,15 @@ import {
   Linkedin,
   MapPin,
   MessageCircle,
+  Plus,
   Twitch,
   Twitter,
   Youtube,
 } from "lucide-react";
 import { categoryLabel } from "@/lib/options";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, profileImageUrl } from "@/lib/utils";
 import { MessageButton } from "@/components/message-button";
+import { SafetyMenu } from "@/components/safety-menu";
 
 export type Service = {
   category: string;
@@ -40,6 +42,8 @@ export type ProfileData = {
   business_type?: string | null;
   portfolio: string[];
   services: Service[];
+  // Newest first; only artists have posts
+  posts?: { id: string; title: string; image_path: string }[];
 };
 
 const pillClass =
@@ -66,14 +70,18 @@ export function ProfileView({
   profile: artist,
   tab,
   viewerId,
+  blocked = false,
 }: {
   profile: ProfileData;
   tab: ProfileTab;
   viewerId: string | undefined;
+  // The viewer has blocked this profile
+  blocked?: boolean;
 }) {
   const id = artist.id;
   const name = artist.display_name ?? "Unnamed";
   const { services, portfolio } = artist;
+  const posts = artist.posts ?? [];
   const isOwn = viewerId === id;
   const isArtist = artist.role === "artist";
   const requestHref = (category?: string) =>
@@ -123,12 +131,24 @@ export function ProfileView({
 
           <div className="flex flex-wrap items-center gap-2">
             {isOwn ? (
-              <Link
-                href="/profile/edit"
-                className={`${pillClass} flex-1 bg-foreground text-background hover:bg-foreground/90`}
-              >
-                Edit profile
-              </Link>
+              <>
+                <Link
+                  href="/profile/edit"
+                  className={`${pillClass} flex-1 bg-foreground text-background hover:bg-foreground/90`}
+                >
+                  Edit profile
+                </Link>
+                {isArtist && (
+                  <Link href="/posts/new" aria-label="New post" title="New post" className={circleClass}>
+                    <Plus className="size-5" />
+                  </Link>
+                )}
+              </>
+            ) : blocked ? (
+              <>
+                <p className="flex-1 text-sm text-muted-foreground">You blocked {name}.</p>
+                <SafetyMenu userId={id} name={name} blocked className={circleClass} />
+              </>
             ) : (
               <>
                 <Link
@@ -153,6 +173,9 @@ export function ProfileView({
                   >
                     <MessageCircle className="size-5" />
                   </Link>
+                )}
+                {viewerId && (
+                  <SafetyMenu userId={id} name={name} blocked={false} className={circleClass} />
                 )}
               </>
             )}
@@ -207,7 +230,7 @@ export function ProfileView({
             {(
               [
                 ["commissions", "Commissions", services.length],
-                ["portfolio", "Portfolio", portfolio.length],
+                ["portfolio", "Portfolio", posts.length + portfolio.length],
               ] as const
             ).map(([value, label, count]) => (
               <Link
@@ -265,7 +288,7 @@ export function ProfileView({
                           From {formatPrice(s.price_min, s.price_max, s.currency)}
                         </p>
                       </div>
-                      {!isOwn && (
+                      {!isOwn && !blocked && (
                         <Link
                           href={requestHref(s.category)}
                           className={`${pillClass} shrink-0 border border-input hover:bg-secondary sm:min-w-48`}
@@ -278,10 +301,37 @@ export function ProfileView({
                 </ul>
               </>
             )
-          ) : portfolio.length === 0 ? (
-            <p className="py-10 text-center text-muted-foreground">No portfolio pieces yet.</p>
+          ) : posts.length + portfolio.length === 0 ? (
+            <div className="flex flex-col items-center gap-4 py-10 text-center text-muted-foreground">
+              <p>No portfolio pieces yet.</p>
+              {isOwn && (
+                <Link href="/posts/new" className={`${pillClass} bg-foreground text-background hover:bg-foreground/90`}>
+                  <Plus className="size-4" />
+                  New post
+                </Link>
+              )}
+            </div>
           ) : (
             <ul className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+              {posts.map((post) => (
+                <li key={post.id}>
+                  <Link
+                    href={`/posts/${post.id}`}
+                    className="group relative block aspect-square overflow-hidden rounded-2xl bg-secondary outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={profileImageUrl(post.image_path)}
+                      alt={post.title}
+                      loading="lazy"
+                      className="size-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03] motion-reduce:transition-none"
+                    />
+                    <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 to-transparent px-3 pb-2.5 pt-8 text-sm font-semibold text-white">
+                      {post.title}
+                    </span>
+                  </Link>
+                </li>
+              ))}
               {portfolio.map((url, i) => (
                 <li key={url}>
                   <a

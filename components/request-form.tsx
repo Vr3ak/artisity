@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { openConversation } from "@/lib/conversations";
 import { CURRENCIES, categoryLabel } from "@/lib/options";
+import { errorText } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -69,7 +70,7 @@ export function RequestForm({
       await openConversation(supabase, userId, artistId);
       router.push(`/requests/${data.id}`);
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(errorText(error, "An error occurred"));
       setIsLoading(false);
     }
   };

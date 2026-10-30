@@ -45,7 +45,11 @@ export async function updateSession(request: NextRequest) {
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/artists") &&
+    // /posts/new redirects anonymous visitors itself
+    !request.nextUrl.pathname.startsWith("/posts") &&
     !request.nextUrl.pathname.startsWith("/about") &&
+    !request.nextUrl.pathname.startsWith("/terms") &&
+    !request.nextUrl.pathname.startsWith("/privacy") &&
     !request.nextUrl.pathname.startsWith("/@") &&
     !request.nextUrl.pathname.startsWith("/auth")
   ) {

@@ -17,6 +17,23 @@ export type Category = (typeof CATEGORIES)[number]["value"];
 export const categoryLabel = (value: string) =>
   CATEGORIES.find((c) => c.value === value)?.label ?? value;
 
+// Values must match the public.report_reason enum in supabase/schemas/safety.sql
+export const REPORT_REASONS = [
+  { value: "spam", label: "Spam" },
+  { value: "harassment", label: "Harassment or hate" },
+  { value: "scam", label: "Scam or fraud" },
+  { value: "inappropriate", label: "Inappropriate content" },
+  { value: "impersonation", label: "Pretending to be someone else" },
+  { value: "ai_generated", label: "Passing off AI work as their own" },
+  { value: "other", label: "Something else" },
+] as const;
+
+export const reportReasonLabel = (value: string) =>
+  REPORT_REASONS.find((r) => r.value === value)?.label ?? value;
+
+// Shown on the legal pages and in errors that need a human
+export const SUPPORT_EMAIL = "support@artisity.co";
+
 export const PROVINCES = [
   "Phnom Penh",
   "Banteay Meanchey",

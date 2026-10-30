@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/components/profile-form";
+import { DeleteAccount } from "@/components/delete-account";
 
 async function Profile() {
   const supabase = await createClient();
@@ -49,6 +50,7 @@ async function Profile() {
         }}
         userId={user.sub}
       />
+      <DeleteAccount />
     </>
   );
 }

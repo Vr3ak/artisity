@@ -23,7 +23,7 @@ Artisity is a marketplace where people and businesses discover Cambodian artists
 
 ## Operating Context
 
-- **Discovery:** the home feed of portfolio work, the artist directory (`/artists`) with category filter and name search, and artist profiles showing bio, social links, services with price ranges, and portfolio.
+- **Discovery:** the home feed of artists' posts (an image with a title and caption, each with its own page and a Request button) and portfolio work, the artist directory (`/artists`) with category filter and name search, and artist profiles showing bio, social links, services with price ranges, and portfolio.
 - **Hiring loop:** the client messages an artist or sends a commission request (service, brief, optional budget and deadline). The artist accepts or declines, then delivers; the client completes. Either side can cancel an accepted request. Chat between the two runs live.
 - **Prices:** whole units in USD or KHR, shown as ranges. There is no currency conversion.
 - **Payment** currently happens outside the platform.
