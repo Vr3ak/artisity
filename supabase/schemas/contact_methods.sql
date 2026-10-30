@@ -3,7 +3,8 @@
 create table public.contact_methods (
   user_id uuid primary key default auth.uid() references public.profiles (id) on delete cascade,
   telegram text check (telegram ~ '^[A-Za-z0-9_]{5,32}$'),
-  facebook text check (facebook ~ '^[A-Za-z0-9.]{5,50}$'),
+  -- username, profile.php?id= (accounts without one), or an app share link; mirrors CONTACTS in components/profile-fields.tsx
+  facebook text check (facebook ~ '^([A-Za-z0-9.]{5,50}|profile\.php\?id=[0-9]{1,20}|share/([a-z]/)?[A-Za-z0-9]{1,30}|people/[A-Za-z0-9._%-]{1,100}/[0-9]{1,20})$'),
   instagram text check (instagram ~ '^[A-Za-z0-9._]{1,30}$')
 );
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { contactHandle } from "@/lib/utils";
 import { PrefixInput } from "@/components/flow";
 import { Facebook, Instagram, Pencil, Send, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -130,7 +131,8 @@ export function ImagesEditor({
   );
 }
 
-// Handles as the DB stores them (see supabase/schemas/contact_methods.sql); pasted links are trimmed to the handle
+// Handles as the DB stores them (see supabase/schemas/contact_methods.sql); pasted links on `host`
+// are trimmed to the handle by contactHandle
 export const CONTACTS = [
   {
     key: "telegram",
@@ -138,15 +140,16 @@ export const CONTACTS = [
     prefix: "t.me/",
     icon: Send,
     re: /^[A-Za-z0-9_]{5,32}$/,
-    strip: /^(https?:\/\/)?(t\.me\/|telegram\.me\/)?@?/i,
+    host: /^(t|telegram)\.me$/i,
   },
   {
     key: "facebook",
     label: "Facebook",
     prefix: "facebook.com/",
     icon: Facebook,
-    re: /^[A-Za-z0-9.]{5,50}$/,
-    strip: /^(https?:\/\/)?((www|m)\.)?(facebook\.com\/)?@?/i,
+    // username, profile.php?id= (accounts without one), or an app share link
+    re: /^([A-Za-z0-9.]{5,50}|profile\.php\?id=[0-9]{1,20}|share\/([a-z]\/)?[A-Za-z0-9]{1,30}|people\/[A-Za-z0-9._%-]{1,100}\/[0-9]{1,20})$/,
+    host: /(^|\.)(facebook|fb)\.com$/i,
   },
   {
     key: "instagram",
@@ -154,7 +157,7 @@ export const CONTACTS = [
     prefix: "instagram.com/",
     icon: Instagram,
     re: /^[A-Za-z0-9._]{1,30}$/,
-    strip: /^(https?:\/\/)?(www\.)?(instagram\.com\/)?@?/i,
+    host: /(^|\.)instagram\.com$/i,
   },
 ] as const;
 export type Contacts = Record<(typeof CONTACTS)[number]["key"], string>;
@@ -167,10 +170,10 @@ export const EMPTY_CONTACTS: Contacts = {
 // Typed values → contact_methods row (null for blanks); throws a readable error for a bad handle
 export function contactRow(contacts: Contacts) {
   return Object.fromEntries(
-    CONTACTS.map(({ key, label, re, strip }) => {
-      const v = contacts[key].trim().replace(strip, "").replace(/\/+$/, "");
+    CONTACTS.map(({ key, label, prefix, re, host }) => {
+      const v = contactHandle(contacts[key], host);
       if (v && !re.test(v))
-        throw new Error(`${label}: that doesn't look like a valid username.`);
+        throw new Error(`${label}: enter your username or paste your ${prefix} link.`);
       return [key, v || null];
     }),
   );
@@ -191,7 +194,6 @@ export function ContactFields({
           aria-label={`${label} username`}
           icon={<Icon className="size-5 shrink-0 text-muted-foreground" />}
           prefix={prefix}
-          placeholder="username"
           autoCapitalize="none"
           spellCheck={false}
           value={contacts[key]}

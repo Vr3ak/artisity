@@ -1,7 +1,7 @@
 -- npx supabase test db --local
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(11);
+select plan(13);
 
 -- client (c), artist (a), outsider (o)
 insert into auth.users (id, email) values
@@ -34,6 +34,8 @@ select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
 select is((select telegram from public.contact_methods where user_id = '00000000-0000-0000-0000-00000000000c'), 'client_tg', 'artist sees contacts after a request');
 
 select lives_ok($$ insert into public.contact_methods (instagram) values ('artist_ig') $$, 'artist saves own contacts');
+select lives_ok($$ update public.contact_methods set facebook = 'profile.php?id=100012345678' $$, 'facebook accepts profile.php ids');
+select throws_ok($$ update public.contact_methods set facebook = 'evil.com/x' $$, '23514', null, 'facebook rejects other paths');
 
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000f');
 select is((select count(*) from public.contact_methods where user_id = '00000000-0000-0000-0000-00000000000c'), 0::bigint, 'outsider cannot see client contacts');

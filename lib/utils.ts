@@ -65,6 +65,23 @@ export function formatPrice(min: number, max: number, currency: string) {
     : `${fmt.format(min)} – ${fmt.format(max)}`;
 }
 
+// Typed value → the handle contact_methods stores. A pasted profile link on that site (any
+// subdomain, with or without https://) becomes its path; share-tracking queries (?igsh=,
+// ?mibextid=) and trailing slashes go, except Facebook's profile.php?id=.
+export function contactHandle(raw: string, host: RegExp): string {
+  const v = raw.trim().replace(/^@/, "");
+  let url: URL;
+  try {
+    url = new URL(/^https?:\/\//i.test(v) ? v : `https://${v}`);
+  } catch {
+    return v;
+  }
+  if (!host.test(url.hostname)) return v;
+  const path = url.pathname.replace(/^\/+|\/+$/g, "").replace(/^@/, "");
+  const id = path === "profile.php" ? url.searchParams.get("id") : null;
+  return id ? `${path}?id=${id}` : path;
+}
+
 // Profile URLs for contact_methods handles (the DB stores bare handles)
 export function contactLinks(
   contact: { telegram: string | null; facebook: string | null; instagram: string | null } | null,

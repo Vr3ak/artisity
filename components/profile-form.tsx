@@ -255,9 +255,7 @@ export function ProfileForm({
       <Section
         title="Social links"
         description={
-          isClient
-            ? "Private. Only shared with people you have a commission request with."
-            : "Shown on your profile so clients can reach you."
+          "Let client find you somewhere else."
         }
       >
         <ContactFields contacts={contacts} onChange={setContacts} />
