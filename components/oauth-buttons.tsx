@@ -5,7 +5,102 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/auth-parts";
 import { type Provider } from "@supabase/supabase-js";
-import { useState } from "react";
+import Script from "next/script";
+import { useCallback, useRef, useState } from "react";
+
+// Same OAuth client id as Supabase's Google provider (public, not a secret)
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+// The slice of Google Identity Services (accounts.google.com/gsi/client) used here
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize(config: {
+            client_id: string;
+            nonce: string;
+            ux_mode: "popup";
+            callback: (response: { credential: string }) => void;
+          }): void;
+          renderButton(parent: HTMLElement, options: Record<string, string | number>): void;
+        };
+      };
+    };
+  }
+}
+
+async function sha256Hex(text: string) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Google's own button (Google Identity Services). It runs on our origin, so the account
+// chooser says "to continue to artisity.co" instead of the Supabase project domain. Its ID
+// token signs in with Supabase directly, so /auth/callback isn't involved.
+function GoogleButton({
+  next,
+  verb,
+  onError,
+}: {
+  next: string;
+  verb: string;
+  onError: (message: string | null) => void;
+}) {
+  const container = useRef<HTMLDivElement>(null);
+  const [signingIn, setSigningIn] = useState(false);
+
+  const render = useCallback(async () => {
+    const el = container.current;
+    const gsi = window.google?.accounts.id;
+    if (!el || !gsi || !GOOGLE_CLIENT_ID) return;
+    // Google puts the hash in the ID token; Supabase checks it against the raw nonce
+    const nonce = crypto.randomUUID();
+    gsi.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      nonce: await sha256Hex(nonce),
+      ux_mode: "popup",
+      callback: async ({ credential }) => {
+        setSigningIn(true);
+        onError(null);
+        const { error } = await createClient().auth.signInWithIdToken({
+          provider: "google",
+          token: credential,
+          nonce,
+        });
+        if (error) {
+          setSigningIn(false);
+          return onError(error.message);
+        }
+        // Full load, like the redirect flow: the server-rendered header needs the new session
+        window.location.assign(next);
+      },
+    });
+    // ponytail: theme is read once; the button keeps its colors if the theme is switched while it's open
+    gsi.renderButton(el, {
+      type: "standard",
+      theme: document.documentElement.classList.contains("dark") ? "filled_black" : "outline",
+      size: "large",
+      shape: "pill",
+      text: verb.startsWith("Sign up") ? "signup_with" : verb.startsWith("Log in") ? "signin_with" : "continue_with",
+      logo_alignment: "center",
+      width: Math.min(el.offsetWidth, 400), // GIS max
+    });
+  }, [next, verb, onError]);
+
+  return (
+    <>
+      <Script src="https://accounts.google.com/gsi/client" onReady={() => void render()} />
+      {/* min-h reserves the button's height so the card doesn't jump when it renders */}
+      <div ref={container} className="flex min-h-11 w-full justify-center" />
+      {signingIn && (
+        <p role="status" className="text-center text-sm text-muted-foreground">
+          Signing in…
+        </p>
+      )}
+    </>
+  );
+}
 
 function GoogleIcon() {
   return (
@@ -75,16 +170,21 @@ export function OAuthButtons({
 
   return (
     <div className="flex flex-col gap-3">
-      <Button
-        type="button"
-        variant="outline"
-        className={cn("w-full", buttonClassName)}
-        disabled={pending !== null}
-        onClick={() => handleOAuth("google")}
-      >
-        <GoogleIcon />
-        {pending === "google" ? "Redirecting…" : `${verb} Google`}
-      </Button>
+      {GOOGLE_CLIENT_ID ? (
+        <GoogleButton next={next} verb={verb} onError={setError} />
+      ) : (
+        // Redirect flow through Supabase when no client id is configured (e.g. local dev)
+        <Button
+          type="button"
+          variant="outline"
+          className={cn("w-full", buttonClassName)}
+          disabled={pending !== null}
+          onClick={() => handleOAuth("google")}
+        >
+          <GoogleIcon />
+          {pending === "google" ? "Redirecting…" : `${verb} Google`}
+        </Button>
+      )}
       {showFacebook && (
         // ponytail: placeholder until the Facebook provider is configured in Supabase
         <Button
