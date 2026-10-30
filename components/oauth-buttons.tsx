@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/auth-parts";
 import { type Provider } from "@supabase/supabase-js";
 import Script from "next/script";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // Same OAuth client id as Supabase's Google provider (public, not a secret)
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -42,19 +42,43 @@ function GoogleButton({
   next,
   verb,
   onError,
+  onUnavailable,
 }: {
   next: string;
   verb: string;
   onError: (message: string | null) => void;
+  // GIS couldn't start (script blocked, or no crypto outside a secure context); use the redirect flow
+  onUnavailable: () => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
+  const initialized = useRef(false);
   const [signingIn, setSigningIn] = useState(false);
 
-  const render = useCallback(async () => {
-    const el = container.current;
+  // renderButton takes a fixed pixel width, so it's redrawn whenever the container's width changes
+  const draw = useCallback(
+    (width: number) => {
+      const el = container.current;
+      const gsi = window.google?.accounts.id;
+      if (!el || !gsi || !initialized.current || width === 0) return;
+      // ponytail: theme is read per draw; switching theme alone doesn't redraw the button
+      gsi.renderButton(el, {
+        type: "standard",
+        theme: document.documentElement.classList.contains("dark") ? "filled_black" : "outline",
+        size: "large",
+        shape: "pill",
+        text: verb.startsWith("Sign up") ? "signup_with" : verb.startsWith("Log in") ? "signin_with" : "continue_with",
+        logo_alignment: "center",
+        width: Math.min(width, 400), // GIS max
+      });
+    },
+    [verb],
+  );
+
+  const setup = useCallback(async () => {
     const gsi = window.google?.accounts.id;
-    if (!el || !gsi || !GOOGLE_CLIENT_ID) return;
-    // Google puts the hash in the ID token; Supabase checks it against the raw nonce
+    if (!gsi || !GOOGLE_CLIENT_ID) throw new Error("Google Identity Services didn't load");
+    // Google puts the hash in the ID token; Supabase checks it against the raw nonce.
+    // Both calls throw outside a secure context (HTTPS or localhost).
     const nonce = crypto.randomUUID();
     gsi.initialize({
       client_id: GOOGLE_CLIENT_ID,
@@ -76,23 +100,36 @@ function GoogleButton({
         window.location.assign(next);
       },
     });
-    // ponytail: theme is read once; the button keeps its colors if the theme is switched while it's open
-    gsi.renderButton(el, {
-      type: "standard",
-      theme: document.documentElement.classList.contains("dark") ? "filled_black" : "outline",
-      size: "large",
-      shape: "pill",
-      text: verb.startsWith("Sign up") ? "signup_with" : verb.startsWith("Log in") ? "signin_with" : "continue_with",
-      logo_alignment: "center",
-      width: Math.min(el.offsetWidth, 400), // GIS max
+    initialized.current = true;
+    draw(Math.round(container.current?.clientWidth ?? 0));
+  }, [next, onError, draw]);
+
+  // Covers every width change: a closed <dialog> (0 until it opens), window resizes, phone rotation
+  useEffect(() => {
+    const el = container.current;
+    if (!el) return;
+    let last = -1;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = Math.round(entry.contentRect.width);
+      if (width === last) return; // the button's own height changes don't need a redraw
+      last = width;
+      draw(width);
     });
-  }, [next, verb, onError]);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [draw]);
 
   return (
     <>
-      <Script src="https://accounts.google.com/gsi/client" onReady={() => void render()} />
-      {/* min-h reserves the button's height so the card doesn't jump when it renders */}
-      <div ref={container} className="flex min-h-11 w-full justify-center" />
+      <Script
+        src="https://accounts.google.com/gsi/client"
+        onReady={() => void setup().catch(onUnavailable)}
+        onError={onUnavailable}
+      />
+      {/* min-h reserves the button's height so the card doesn't jump when it renders.
+          color-scheme light matches Google's iframe; on our dark root a mismatch makes
+          Chrome paint the iframe an opaque white box. */}
+      <div ref={container} className="flex min-h-11 w-full justify-center [color-scheme:light]" />
       {signingIn && (
         <p role="status" className="text-center text-sm text-muted-foreground">
           Signing in…
@@ -149,6 +186,7 @@ export function OAuthButtons({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<Provider | null>(null);
+  const [gisUnavailable, setGisUnavailable] = useState(false);
 
   const handleOAuth = async (provider: Provider) => {
     const supabase = createClient();
@@ -170,10 +208,15 @@ export function OAuthButtons({
 
   return (
     <div className="flex flex-col gap-3">
-      {GOOGLE_CLIENT_ID ? (
-        <GoogleButton next={next} verb={verb} onError={setError} />
+      {GOOGLE_CLIENT_ID && !gisUnavailable ? (
+        <GoogleButton
+          next={next}
+          verb={verb}
+          onError={setError}
+          onUnavailable={() => setGisUnavailable(true)}
+        />
       ) : (
-        // Redirect flow through Supabase when no client id is configured (e.g. local dev)
+        // Redirect flow through Supabase: no client id configured (e.g. local dev), or GIS failed to start
         <Button
           type="button"
           variant="outline"
