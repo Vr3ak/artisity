@@ -16,8 +16,14 @@ export function profileHref(p: { id: string; username?: string | null }) {
 
 // Mirrors the profiles.username check constraint
 export const USERNAME_RE = /^[a-z0-9_]{3,30}$/;
-export const USERNAME_HINT =
-  "3–30 characters: lowercase letters, numbers and _";
+// Names only the rule the username breaks; toUsername already strips most bad characters as you type
+export function usernameError(u: string): string | null {
+  if (!u) return "Choose a username.";
+  if (u.length < 3) return "Username needs at least 3 characters.";
+  if (u.length > 30) return "Username can be at most 30 characters.";
+  if (!USERNAME_RE.test(u)) return "Username can only use lowercase letters, numbers and _.";
+  return null;
+}
 // What a user typed → candidate username (lowercased, spaces and stray characters dropped)
 export const toUsername = (raw: string) =>
   raw

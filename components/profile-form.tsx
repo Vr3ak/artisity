@@ -3,11 +3,10 @@
 import { createClient } from "@/lib/supabase/client";
 import { uploadImage } from "@/lib/upload";
 import {
-  USERNAME_HINT,
-  USERNAME_RE,
   cn,
   parseSocialLinks,
   toUsername,
+  usernameError,
 } from "@/lib/utils";
 import { BUSINESS_TYPES, PROVINCES } from "@/lib/options";
 import { FormError } from "@/components/auth-parts";
@@ -103,8 +102,8 @@ export function ProfileForm({
     const supabase = createClient();
     try {
       if (!name.trim()) throw new Error("Add a display name.");
-      if (username && !USERNAME_RE.test(username))
-        throw new Error(`Username: ${USERNAME_HINT}.`);
+      const badUsername = username && usernameError(username);
+      if (badUsername) throw new Error(badUsername);
       if (isClient && !businessType)
         throw new Error("Choose what best describes you.");
       const socialLinks = parseSocialLinks(
@@ -187,7 +186,7 @@ export function ProfileForm({
             />
           )}
         </Field>
-        <Field label="Username" hint={USERNAME_HINT}>
+        <Field label="Username">
           {(id) => (
             <PrefixInput
               id={id}

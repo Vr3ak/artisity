@@ -3,11 +3,10 @@
 import { createClient } from "@/lib/supabase/client";
 import { uploadImage } from "@/lib/upload";
 import {
-  USERNAME_HINT,
-  USERNAME_RE,
   parseSocialLinks,
   profileHref,
   toUsername,
+  usernameError,
 } from "@/lib/utils";
 import {
   BUSINESS_TYPES,
@@ -152,8 +151,8 @@ export function OnboardingForm({
       if (step === "look") {
         if (!name.trim()) throw new Error("Add a display name.");
         if (!usernameSaved) {
-          if (!USERNAME_RE.test(username))
-            throw new Error(`Username: ${USERNAME_HINT}.`);
+          const bad = usernameError(username);
+          if (bad) throw new Error(bad);
           setBusy(true);
           const { error } = await createClient()
             .from("profiles")
@@ -320,7 +319,7 @@ export function OnboardingForm({
           )}
         </Field>
         {!initial.username && (
-          <Field label="Username" hint={USERNAME_HINT}>
+          <Field label="Username">
             {(id) => (
               <PrefixInput
                 id={id}

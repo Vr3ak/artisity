@@ -126,10 +126,6 @@ export function ImagesEditor({
             }}
           />
         </label>
-        <p className="text-xs text-muted-foreground">
-          Cover 1500×500 and picture 400×400 look best. PNG, JPEG, WebP or GIF;
-          large images are resized, GIFs up to 7 MB.
-        </p>
       </div>
     </div>
   );
