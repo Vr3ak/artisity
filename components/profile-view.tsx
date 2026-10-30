@@ -9,12 +9,13 @@ import {
   MapPin,
   MessageCircle,
   Plus,
+  Send,
   Twitch,
   Twitter,
   Youtube,
 } from "lucide-react";
 import { categoryLabel } from "@/lib/options";
-import { formatPrice, postImagePaths, profileImageUrl } from "@/lib/utils";
+import { contactLinks, formatPrice, postImagePaths, profileImageUrl } from "@/lib/utils";
 import { ImageCarousel } from "@/components/image-carousel";
 import { MessageButton } from "@/components/message-button";
 import { SafetyMenu } from "@/components/safety-menu";
@@ -38,6 +39,8 @@ export type ProfileData = {
   bio: string | null;
   location: string | null;
   social_links: string[];
+  // Public for artists; clients' only reach their own page and request partners (RLS)
+  contact_methods?: { telegram: string | null; facebook: string | null; instagram: string | null } | null;
   role: string | null;
   business_name?: string | null;
   business_type?: string | null;
@@ -62,6 +65,7 @@ const SOCIAL_ICONS: [RegExp, typeof Globe][] = [
   [/(^|\.)github\.com$/, Github],
   [/(^|\.)dribbble\.com$/, Dribbble],
   [/(^|\.)twitch\.tv$/, Twitch],
+  [/(^|\.)(t|telegram)\.me$/, Send],
 ];
 
 // Profile page after vgen.co: full-bleed cover, a sticky left column (avatar, name, @handle,
@@ -83,6 +87,10 @@ export function ProfileView({
   const name = artist.display_name ?? "Unnamed";
   const { services, portfolio } = artist;
   const posts = artist.posts ?? [];
+  // Social links plus contact handles, minus any the user entered both ways
+  const links = [
+    ...new Set([...artist.social_links, ...contactLinks(artist.contact_methods ?? null).map((l) => l.href)]),
+  ];
   const isOwn = viewerId === id;
   const isArtist = artist.role === "artist";
   const requestHref = (category?: string) =>
@@ -186,10 +194,11 @@ export function ProfileView({
             <p className="whitespace-pre-line text-sm leading-relaxed">{artist.bio}</p>
           )}
 
-          {artist.social_links.length > 0 && (
+          {links.length > 0 && (
             <ul className="flex flex-col gap-3 text-sm font-semibold">
-              {artist.social_links.map((link) => {
-                const host = new URL(link).hostname.replace(/^www\./, "");
+              {links.map((link) => {
+                const url = new URL(link);
+                const host = url.hostname.replace(/^www\./, "");
                 const Icon = SOCIAL_ICONS.find(([re]) => re.test(host))?.[1] ?? Globe;
                 return (
                   <li key={link}>
@@ -197,10 +206,10 @@ export function ProfileView({
                       href={link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 underline-offset-4 hover:underline"
+                      className="inline-flex max-w-full items-center gap-2 underline-offset-4 hover:underline"
                     >
                       <Icon className="size-4 shrink-0" />
-                      {host}
+                      <span className="truncate">{host + url.pathname.replace(/\/$/, "")}</span>
                     </a>
                   </li>
                 );

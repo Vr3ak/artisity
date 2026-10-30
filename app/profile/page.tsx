@@ -22,7 +22,7 @@ async function Profile({ searchParams }: { searchParams: Search }) {
   const { data: profile, error } = await supabase
     .from("profiles")
     .select(
-      "id, username, display_name, avatar_url, cover_url, bio, location, social_links, role, business_name, business_type, portfolio, services(category, currency, price_min, price_max), posts(id, title, image_path, image_count)",
+      "id, username, display_name, avatar_url, cover_url, bio, location, social_links, role, business_name, business_type, portfolio, services(category, currency, price_min, price_max), posts(id, title, image_path, image_count), contact_methods(telegram, facebook, instagram)",
     )
     .eq("id", user.sub)
     .order("created_at", { referencedTable: "posts", ascending: false })
@@ -32,7 +32,7 @@ async function Profile({ searchParams }: { searchParams: Search }) {
 
   return (
     <ProfileView
-      profile={profile as ProfileData}
+      profile={profile as unknown as ProfileData}
       tab={tab}
       viewerId={user.sub}
     />

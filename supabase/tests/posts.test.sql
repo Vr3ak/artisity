@@ -43,16 +43,16 @@ $$, '42501', null, 'clients cannot post');
 
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000b');
 delete from public.posts;
-select is((select count(*) from public.posts), 1::bigint, 'others cannot delete a post');
+select is((select count(*) from public.posts where id = '00000000-0000-0000-0000-0000000000f1'), 1::bigint, 'others cannot delete a post');
 
 set local role anon;
-select is((select title from public.posts), 'Temple at dusk', 'anyone can read posts');
+select is((select title from public.posts where id = '00000000-0000-0000-0000-0000000000f1'), 'Temple at dusk', 'anyone can read posts');
 
 set local role authenticated;
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
-select throws_ok($$ update public.posts set title = 'edited' $$, '42501', null, 'posts are not editable');
+select throws_ok($$ update public.posts set title = 'edited' where id = '00000000-0000-0000-0000-0000000000f1' $$, '42501', null, 'posts are not editable');
 delete from public.posts;
-select is((select count(*) from public.posts), 0::bigint, 'owner deletes their post');
+select is((select count(*) from public.posts where id = '00000000-0000-0000-0000-0000000000f1'), 0::bigint, 'owner deletes their post');
 
 select * from finish();
 rollback;

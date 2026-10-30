@@ -544,6 +544,8 @@ export function OnboardingForm({
   return card(
     "Would you like to add any other contact methods?",
     <ContactFields contacts={contacts} onChange={setContacts} />,
-    "Optional. Only shared with people you have a commission request with.",
+    isArtist
+      ? "Optional. Shown on your profile so clients can reach you."
+      : "Optional. Only shared with people you have a commission request with.",
   );
 }

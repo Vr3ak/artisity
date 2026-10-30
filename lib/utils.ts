@@ -79,3 +79,15 @@ export function parseSocialLinks(text: string): string[] {
   if (bad) throw new Error(`That doesn't look like a link: ${bad}`);
   return links;
 }
+
+// Profile URLs for contact_methods handles (the DB stores bare handles)
+export function contactLinks(
+  contact: { telegram: string | null; facebook: string | null; instagram: string | null } | null,
+) {
+  if (!contact) return [];
+  return [
+    contact.telegram && { label: "Telegram", href: `https://t.me/${contact.telegram}` },
+    contact.facebook && { label: "Facebook", href: `https://facebook.com/${contact.facebook}` },
+    contact.instagram && { label: "Instagram", href: `https://instagram.com/${contact.instagram}` },
+  ].filter((l): l is { label: string; href: string } => !!l);
+}

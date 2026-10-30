@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { categoryLabel } from "@/lib/options";
-import { formatPrice } from "@/lib/utils";
+import { contactLinks, formatPrice } from "@/lib/utils";
 import { loadChat } from "@/lib/chat";
 import { findConversation } from "@/lib/conversations";
 import { Badge } from "@/components/ui/badge";
@@ -32,28 +32,13 @@ async function Request({ params }: { params: Promise<{ id: string }> }) {
   const other = (side === "artist"
     ? request.client
     : request.artist) as unknown as { display_name: string | null };
-  // RLS shows contact_methods only to the owner and their request partners
+  // RLS shows contact_methods to request partners (and publicly for artists)
   const { data: contact } = await supabase
     .from("contact_methods")
     .select("telegram, facebook, instagram")
     .eq("user_id", side === "artist" ? request.client_id : request.artist_id)
     .maybeSingle();
-  const contactLinks = contact
-    ? [
-        contact.telegram && {
-          label: "Telegram",
-          href: `https://t.me/${contact.telegram}`,
-        },
-        contact.facebook && {
-          label: "Facebook",
-          href: `https://facebook.com/${contact.facebook}`,
-        },
-        contact.instagram && {
-          label: "Instagram",
-          href: `https://instagram.com/${contact.instagram}`,
-        },
-      ].filter((l): l is { label: string; href: string } => !!l)
-    : [];
+  const links = contactLinks(contact);
 
   // The request form opens this thread; it may have been started from either side
   const conversationId = await findConversation(
@@ -97,10 +82,10 @@ async function Request({ params }: { params: Promise<{ id: string }> }) {
             </div>
           )}
         </dl>
-        {contactLinks.length > 0 && (
+        {links.length > 0 && (
           <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
             <span className="text-muted-foreground">Contact:</span>
-            {contactLinks.map((l) => (
+            {links.map((l) => (
               <a
                 key={l.label}
                 href={l.href}
