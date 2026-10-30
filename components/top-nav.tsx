@@ -55,24 +55,21 @@ export async function TopNav() {
 
       {/* mt-2 drops the links to the wordmark, which sits below the logo image's center */}
       <nav aria-label="Main" className="mt-2 hidden items-center gap-1 md:flex">
-        {/* ponytail: About and Shop are placeholders until those pages exist */}
-        <span
-          aria-disabled
-          className={`${linkClass} ${soonClass}`}
-          title="Coming soon"
-        >
-          About us
-        </span>
+       
         <Link href="/artists" className={linkClass}>
           Commission
         </Link>
+        {/* ponytail: Shop is a placeholder until that page exists */}
         <span
           aria-disabled
           className={`${linkClass} ${soonClass}`}
           title="Coming soon"
         >
           Shop
-        </span>
+        </span> 
+        <Link href="/about" className={linkClass}>
+          About us
+        </Link>
       </nav>
 
       <div className="ml-auto flex items-center gap-2">
