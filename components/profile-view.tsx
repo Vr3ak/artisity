@@ -32,7 +32,7 @@ export type ProfileData = {
   bio: string | null;
   location: string | null;
   // Public for artists; clients' only reach their own page and request partners (RLS)
-  contact_methods?: Parameters<typeof contactLinks>[0];
+  contact_methods?: { telegram: string | null; facebook: string | null; instagram: string | null } | null;
   role: string | null;
   business_name?: string | null;
   business_type?: string | null;
@@ -173,7 +173,7 @@ export function ProfileView({
           )}
 
           {links.length > 0 && (
-            <ul className="flex flex-col gap-3 text-sm font-semibold">
+            <ul className="flex gap-2">
               {links.map((link) => {
                 const Icon = CONTACT_ICONS[link.key];
                 return (
@@ -182,10 +182,11 @@ export function ProfileView({
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex max-w-full items-center gap-2 underline-offset-4 hover:underline"
+                      aria-label={`${name} on ${link.label}`}
+                      title={link.label}
+                      className={circleClass}
                     >
-                      <Icon className="size-4 shrink-0" />
-                      <span className="truncate">{link.text}</span>
+                      <Icon className="size-5" />
                     </a>
                   </li>
                 );
