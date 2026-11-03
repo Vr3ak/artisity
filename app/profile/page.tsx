@@ -10,8 +10,6 @@ import {
 
 type Search = Promise<{ tab?: string }>;
 
-// Your own profile, shown the way visitors see it (vgen.co style) with an "Edit profile" button.
-// Clients get the same page; theirs is only visible to them and the artists they contact.
 async function Profile({ searchParams }: { searchParams: Search }) {
   const tab = parseTab((await searchParams).tab);
   const supabase = await createClient();
@@ -22,13 +20,12 @@ async function Profile({ searchParams }: { searchParams: Search }) {
   const { data: profile, error } = await supabase
     .from("profiles")
     .select(
-      "id, username, display_name, avatar_url, cover_url, bio, location, role, business_name, business_type, portfolio, services(category, currency, price_min, price_max), posts!posts_artist_id_fkey(id, title, image_path, image_count), contact_methods(telegram, facebook, instagram)",
+      "id, username, display_name, avatar_url, cover_url, bio, location, role, business_name, business_type, services(category, currency, price_min, price_max), posts!posts_artist_id_fkey(id, title, image_path, image_count), contact_methods(telegram, facebook, instagram)",
     )
     .eq("id", user.sub)
     .order("created_at", { referencedTable: "posts", ascending: false })
     .maybeSingle();
   if (error) throw error;
-  // No row: the account is gone (deleted elsewhere) but this browser's token hasn't expired
   if (!profile) redirect("/auth/login");
   if (!profile.role) redirect("/onboarding");
 

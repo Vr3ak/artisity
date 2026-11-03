@@ -193,18 +193,21 @@ export function OnboardingForm({
     const supabase = createClient();
     setBusy(true);
     const contactValues = contactRow(contacts);
-    let artistFields = {};
+    let portfolioPosts: object[] = [];
     if (isArtist) {
       const services = buildServices();
-      const portfolioUrls = await Promise.all(
-        portfolio.map((f) =>
-          uploadImage(
-            supabase,
-            `${userId}/portfolio/${crypto.randomUUID()}`,
-            f,
-          ),
-        ),
+      // Each portfolio image becomes a one-image post (titled after the first service), so it can be
+      // liked and requested like any other. The ids come first because image_path must be
+      // <uid>/posts/<id>; the rows go in after `role`, since only artists can post.
+      const posts = await Promise.all(
+        portfolio.map(async (f) => {
+          const id = crypto.randomUUID();
+          const image_path = `${userId}/posts/${id}`;
+          await uploadImage(supabase, image_path, f);
+          return { id, image_path, title: categoryLabel(categories[0]), category: categories[0] };
+        }),
       );
+      portfolioPosts = posts;
       // Replace rather than upsert so a retry with fewer categories leaves no stale rows
       const { error: delError } = await supabase
         .from("services")
@@ -215,7 +218,6 @@ export function OnboardingForm({
         .from("services")
         .insert(services);
       if (svcError) throw svcError;
-      artistFields = { portfolio: portfolioUrls };
     }
     const { error: contactError } = await supabase
       .from("contact_methods")
@@ -240,11 +242,14 @@ export function OnboardingForm({
           business_name: businessName.trim() || null,
           business_type: businessType,
         }),
-        ...artistFields,
         role: isArtist ? "artist" : "client",
       })
       .eq("id", userId);
     if (error) throw error;
+    if (portfolioPosts.length) {
+      const { error: postsError } = await supabase.from("posts").insert(portfolioPosts);
+      if (postsError) throw postsError;
+    }
     router.push(
       isArtist
         ? profileHref({ id: userId, username: initial.username ?? username })

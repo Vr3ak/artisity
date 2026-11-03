@@ -36,7 +36,6 @@ export type ProfileData = {
   role: string | null;
   business_name?: string | null;
   business_type?: string | null;
-  portfolio: string[];
   services: Service[];
   // Newest first; only artists have posts
   posts?: { id: string; title: string; image_path: string; image_count: number }[];
@@ -66,7 +65,7 @@ export function ProfileView({
 }) {
   const id = artist.id;
   const name = artist.display_name ?? "Unnamed";
-  const { services, portfolio } = artist;
+  const { services } = artist;
   const posts = artist.posts ?? [];
   const links = contactLinks(artist.contact_methods ?? null);
   const isOwn = viewerId === id;
@@ -217,7 +216,7 @@ export function ProfileView({
             {(
               [
                 ["commissions", "Commissions", services.length],
-                ["portfolio", "Portfolio", posts.length + portfolio.length],
+                ["portfolio", "Portfolio", posts.length],
               ] as const
             ).map(([value, label, count]) => (
               <Link
@@ -288,7 +287,7 @@ export function ProfileView({
                 </ul>
               </>
             )
-          ) : posts.length + portfolio.length === 0 ? (
+          ) : posts.length === 0 ? (
             <div className="flex flex-col items-center gap-4 py-10 text-center text-muted-foreground">
               <p>No portfolio pieces yet.</p>
               {isOwn && (
@@ -314,24 +313,6 @@ export function ProfileView({
                       {post.title}
                     </span>
                   </Link>
-                </li>
-              ))}
-              {portfolio.map((url, i) => (
-                <li key={url}>
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block aspect-square overflow-hidden rounded-2xl bg-secondary outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={url}
-                      alt={`Work by ${name}, piece ${i + 1}`}
-                      loading="lazy"
-                      className="size-full object-cover transition-transform duration-300 ease-out hover:scale-[1.03] motion-reduce:transition-none"
-                    />
-                  </a>
                 </li>
               ))}
             </ul>

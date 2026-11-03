@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { categoryLabel } from "@/lib/options";
-import { formatPrice, postImagePaths, profileHref, profileImageUrl } from "@/lib/utils";
+import { formatPrice, postImagePaths, profileImageUrl } from "@/lib/utils";
 import { ImageCarousel } from "@/components/image-carousel";
 import { LikeButton } from "@/components/like-button";
 
@@ -18,14 +17,12 @@ export const CARD_ARTIST_COLUMNS = "id, username, display_name, avatar_url, serv
 export const CARD_POST_COLUMNS = `id, title, category, image_path, image_count, created_at, artist:profiles!posts_artist_id_fkey(${CARD_ARTIST_COLUMNS})`;
 
 export type Card = {
-  key: string;
   href: string;
   images: string[];
   title: string | null;
   artist: CardArtist;
   service: Service | undefined;
-  at: string;
-  postId?: string; // only real posts can be liked, not onboarding portfolio images
+  postId: string;
 };
 
 type PostRow = { id: string; title: string; category: string | null; image_path: string; image_count: number; created_at: string; artist: unknown };
@@ -35,28 +32,12 @@ export function postCard(p: PostRow): Card | null {
   const artist = p.artist as CardArtist | null;
   if (!artist) return null;
   return {
-    key: p.id,
     href: `/posts/${p.id}`,
     images: postImagePaths(p.image_path, p.image_count).map(profileImageUrl),
     title: p.title,
     artist,
     service: artist.services.find((s) => s.category === p.category) ?? artist.services[0],
-    at: p.created_at,
     postId: p.id,
-  };
-}
-
-// An onboarding portfolio image: no title or page of its own, so it links to the profile
-export function portfolioCard(image: string, artist: CardArtist & { created_at: string }): Card {
-  const service = artist.services[0];
-  return {
-    key: image,
-    href: profileHref(artist),
-    images: [image],
-    title: service ? categoryLabel(service.category) : null,
-    artist,
-    service,
-    at: artist.created_at,
   };
 }
 
@@ -112,7 +93,7 @@ export function PostCard({ card, liked, viewerId }: { card: Card; liked: boolean
         </div>
       </Link>
       {/* No heart on your own posts, matching /posts/[id] */}
-      {postId && artist.id !== viewerId && (
+      {artist.id !== viewerId && (
         <LikeButton
           postId={postId}
           title={title ?? "post"}

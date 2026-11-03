@@ -108,3 +108,15 @@ export function timeAgo(iso: string, now = Date.now()) {
   for (const [unit, size] of AGO_UNITS) if (s >= size) return fmt.format(-Math.floor(s / size), unit);
   return "just now";
 }
+
+// Item indexes per column: each one into the shortest column so far (ties go left). Unmeasured items count as 1, so they deal round-robin. 24 = the column gap
+export function masonryLayout(keys: string[], n: number, heights: Record<string, number>) {
+  const cols: number[][] = Array.from({ length: n }, () => []);
+  const sums = new Array<number>(n).fill(0);
+  keys.forEach((k, i) => {
+    const c = sums.indexOf(Math.min(...sums));
+    cols[c].push(i);
+    sums[c] += (heights[k] ?? 1) + 24;
+  });
+  return cols;
+}

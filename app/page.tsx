@@ -7,36 +7,21 @@ import { CategoryChips } from "@/components/category-chips";
 import { SiteFooter } from "@/components/site-footer";
 import { Loading } from "@/components/loading";
 import { Masonry } from "@/components/masonry";
-import { CARD_ARTIST_COLUMNS, CARD_POST_COLUMNS, PostCard, portfolioCard, postCard, type CardArtist } from "@/components/post-card";
+import { CARD_POST_COLUMNS, PostCard, postCard } from "@/components/post-card";
 import { PostHero } from "@/components/post-hero";
 
-// The feed mixes real posts (title, own page) with onboarding portfolio images (no title,
-// dated by the artist's sign-up, linking to the profile), newest first.
-// ponytail: newest 48 posts + 24 artists, no paging; add "load more" when the feed outgrows it
 async function Posts() {
   const supabase = await createClient();
-  const [{ data: artists, error }, { data: posts, error: postsError }, { data: claims }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select(`${CARD_ARTIST_COLUMNS}, portfolio, created_at`)
-      .eq("role", "artist")
-      .order("created_at", { ascending: false })
-      .limit(24),
+  const [{ data: posts, error }, { data: claims }] = await Promise.all([
     supabase.from("posts").select(CARD_POST_COLUMNS).order("created_at", { ascending: false }).limit(48),
     supabase.auth.getClaims(),
   ]);
   if (error) throw error;
-  if (postsError) throw postsError;
-
-  const feed = [
-    ...posts.flatMap((p) => postCard(p) ?? []),
-    ...artists.flatMap((a) => (a.portfolio as string[]).map((image) => portfolioCard(image, a as unknown as CardArtist & { created_at: string }))),
-  ].sort((x, y) => y.at.localeCompare(x.at));
+  const feed = posts.flatMap((p) => postCard(p) ?? []);
 
   if (feed.length === 0)
     return <p className="text-muted-foreground">No posts yet.</p>;
 
-  // Which of these the viewer liked (RLS returns only their own likes; anon can't read likes)
   const viewerId = claims?.claims?.sub;
   const { data: likes, error: likesError } = viewerId
     ? await supabase.from("post_likes").select("post_id").in("post_id", posts.map((p) => p.id))
@@ -47,13 +32,12 @@ async function Posts() {
   return (
     <Masonry>
       {feed.map((card) => (
-        <PostCard key={card.key} card={card} liked={liked.has(card.postId)} viewerId={viewerId} />
+        <PostCard key={card.postId} card={card} liked={liked.has(card.postId)} viewerId={viewerId} />
       ))}
     </Masonry>
   );
 }
 
-// The newest real posts (not portfolio images) as the hero strip; nothing until someone posts
 async function Hero() {
   const supabase = await createClient();
   const { data: posts, error } = await supabase
@@ -78,7 +62,6 @@ async function Hero() {
   return slides.length > 0 && <PostHero slides={slides} />;
 }
 
-// Same box as a slide, so the page doesn't jump when the hero streams in
 function HeroSkeleton() {
   return (
     <div className="pt-2 [container-type:inline-size]">

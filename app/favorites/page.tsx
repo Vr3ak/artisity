@@ -45,7 +45,7 @@ async function Favorites() {
   return (
     <Masonry>
       {cards.map((card) => (
-        <PostCard key={card.key} card={card} liked viewerId={claims.claims.sub} />
+        <PostCard key={card.postId} card={card} liked viewerId={claims.claims.sub} />
       ))}
     </Masonry>
   );

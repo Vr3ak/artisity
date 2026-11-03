@@ -11,7 +11,12 @@ create table public.posts (
   caption text not null default '' check (char_length(caption) <= 2000),
   category public.art_category,
   created_at timestamptz not null default now(),
-  check (image_path = artist_id::text || '/posts/' || id::text)
+  -- New posts live at <artist>/posts/<id>; posts converted from the old onboarding portfolio keep
+  -- their file at <artist>/portfolio/<uuid>
+  check (
+    image_path = artist_id::text || '/posts/' || id::text
+    or image_path ~ ('^' || artist_id::text || '/portfolio/[0-9a-f-]{36}$')
+  )
 );
 
 create index posts_artist_id_idx on public.posts (artist_id);

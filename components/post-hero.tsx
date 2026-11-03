@@ -14,9 +14,6 @@ export type HeroSlide = {
   ago: string;
 };
 
-// Home hero: the newest posts as a centered strip with the neighbours peeking in. The active dot's fill
-// is the autoplay timer: its animationend advances the strip, and pausing it pauses autoplay. Hover or
-// focus holds it, and reduced motion starts paused (WCAG 2.2.2 wants the pause button either way).
 export function PostHero({ slides }: { slides: HeroSlide[] }) {
   const track = useRef<HTMLUListElement>(null);
   const [index, setIndex] = useState(0);
@@ -90,7 +87,6 @@ export function PostHero({ slides }: { slides: HeroSlide[] }) {
                 <p className="flex min-w-0 items-center gap-2 text-sm">
                   <span className="size-6 shrink-0 overflow-hidden rounded-full bg-secondary sm:size-7">
                     {s.avatar && (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={s.avatar} alt="" referrerPolicy="no-referrer" className="size-full object-cover" />
                     )}
                   </span>

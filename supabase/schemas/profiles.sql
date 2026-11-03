@@ -25,7 +25,6 @@ create table public.profiles (
   categories public.art_category[] not null default '{}' check (cardinality(categories) <= 10),
   business_name text check (char_length(business_name) <= 100),
   business_type text check (char_length(business_type) <= 60),
-  portfolio public.http_url[] not null default '{}' check (cardinality(portfolio) <= 12),
   -- Public handle for /@username URLs; null until chosen at sign-up or onboarding
   username text unique check (username ~ '^[a-z0-9_]{3,30}$'),
   created_at timestamptz not null default now()
