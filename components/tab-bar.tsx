@@ -68,6 +68,7 @@ export function TabBar({
     { href: "/", label: "Home", icon: <Home className="size-5" />, active: path === "/" },
     { href: "/artists", label: "Commission", icon: <Search className="size-5" />, active: path.startsWith("/artists") || path.startsWith("/@") },
     { href: "/messages", label: "Messages", icon: <MessageCircle className="size-5" />, active: path.startsWith("/messages") },
+    { href: "/favorites", label: "Favorites", icon: <Heart className="size-5" />, active: path.startsWith("/favorites") },
   ];
   const accountActive = /^\/(profile|requests|staff|onboarding)/.test(path);
 
@@ -87,14 +88,6 @@ export function TabBar({
             <Tab active={l.active} icon={l.icon} label={l.label} />
           </Link>
         ))}
-        {/* ponytail: saved artists/posts don't exist yet */}
-        <span
-          aria-disabled
-          title="Coming soon"
-          className={cn(tabClass, "cursor-not-allowed opacity-50")}
-        >
-          <Tab active={false} icon={<Heart className="size-5" />} label="Favorites" />
-        </span>
         <NavMenu
           signedIn={signedIn}
           role={role}

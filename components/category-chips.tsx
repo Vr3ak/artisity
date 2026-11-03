@@ -35,41 +35,44 @@ const ICONS: Record<Category, { Icon: LucideIcon; from: string; to: string }> = 
 };
 
 const chipClass =
-  "group flex shrink-0 items-center gap-2.5 rounded-full py-1 pr-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  "group flex shrink-0 items-center rounded-full py-1 pr-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
-function Disc({ Icon, from, to }: { Icon: LucideIcon; from?: string; to?: string }) {
+function Disc({ Icon, from, to, large }: { Icon: LucideIcon; from?: string; to?: string; large?: boolean }) {
   return (
     <span
       className={cn(
-        "relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full transition-transform duration-200 ease-out group-hover:-translate-y-0.5 motion-reduce:transition-none",
+        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full transition-transform duration-200 ease-out group-hover:-translate-y-0.5 motion-reduce:transition-none",
+        large ? "size-14" : "size-10",
         from ? "text-white" : "bg-foreground text-background",
       )}
       style={
         from
           ? {
               backgroundImage: `linear-gradient(135deg, ${from}, ${to})`,
-              boxShadow: `0 6px 14px -6px ${to}, inset 0 1px 0 rgb(255 255 255 / 0.55)`,
+              boxShadow: `${large ? "0 8px 18px -8px" : "0 6px 14px -6px"} ${to}, inset 0 1px 0 rgb(255 255 255 / 0.55)`,
             }
           : undefined
       }
     >
       {/* Gloss: a soft white sheen over the top half */}
       <span aria-hidden className="absolute inset-x-1 top-0.5 h-1/2 rounded-full bg-gradient-to-b from-white/45 to-white/0" />
-      <Icon className="relative size-[18px] drop-shadow-[0_1px_1px_rgb(0_0_0/0.25)]" aria-hidden />
+      <Icon className={cn("relative drop-shadow-[0_1px_1px_rgb(0_0_0/0.25)]", large ? "size-6" : "size-[18px]")} aria-hidden />
     </span>
   );
 }
 
 // Category links to /artists: a colored disc plus plain text. One swipeable row on phones, wrapped from md up;
-// `bleed` lets the row run to the screen edge inside a padded container of that width.
+// `bleed` lets the row run to the screen edge inside a padded container of that width; `large` is the home page's bigger set.
 export function CategoryChips({
   active,
   withAll = false,
   bleed = "-mx-4 px-4",
+  large = false,
 }: {
   active?: string;
   withAll?: boolean;
   bleed?: string;
+  large?: boolean;
 }) {
   const nav = useRef<HTMLElement>(null);
   // On phones the row scrolls sideways; bring the selected chip into view
@@ -88,7 +91,8 @@ export function CategoryChips({
       ref={nav}
       aria-label="Categories"
       className={cn(
-        "flex gap-x-5 gap-y-3 overflow-x-auto py-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:px-0",
+        "flex overflow-x-auto py-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:px-0",
+        large ? "gap-x-7 gap-y-4" : "gap-x-5 gap-y-3",
         bleed,
       )}
     >
@@ -99,9 +103,9 @@ export function CategoryChips({
             key={label}
             href={value ? `/artists?category=${value}` : "/artists"}
             aria-current={on ? "page" : undefined}
-            className={chipClass}
+            className={cn(chipClass, large ? "gap-3 text-base font-semibold" : "gap-2.5 text-sm font-medium")}
           >
-            <Disc {...disc} />
+            <Disc {...disc} large={large} />
             <span
               className={cn(
                 "underline-offset-4 group-hover:underline",

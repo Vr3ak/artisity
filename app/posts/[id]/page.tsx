@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { LikeButton } from "@/components/like-button";
 import { MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { categoryLabel } from "@/lib/options";
@@ -38,28 +39,38 @@ async function Post({ params }: { params: Promise<{ id: string }> }) {
   const { data: claims } = await supabase.auth.getClaims();
   const viewerId = claims?.claims.sub;
   const isOwn = viewerId === artist.id;
+  const { data: like } = viewerId
+    ? await supabase.from("post_likes").select("post_id").eq("post_id", post.id).maybeSingle()
+    : { data: null };
   const requestHref = viewerId
     ? `/requests/new?artist=${artist.id}${post.category ? `&category=${post.category}` : ""}`
     : "/auth/login";
 
-  return (
-    <article className="grid gap-8 md:grid-cols-[3fr_2fr] md:gap-12">
-      {/* ponytail: images stacked like a Behance project; add a carousel if long posts feel heavy */}
-      <div className="flex flex-col gap-3">
-        {imagePaths.map((path, i) => (
-          <div key={path} className="overflow-hidden rounded-3xl bg-secondary">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={profileImageUrl(path)}
-              alt={imagePaths.length > 1 ? `${post.title}, image ${i + 1} of ${imagePaths.length}` : post.title}
-              loading={i ? "lazy" : undefined}
-              className="max-h-[80dvh] w-full object-contain"
-            />
-          </div>
-        ))}
-      </div>
+  const image = (i: number) => (
+    <div key={imagePaths[i]} className="overflow-hidden rounded-3xl bg-secondary md:col-start-1">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={profileImageUrl(imagePaths[i])}
+        alt={imagePaths.length > 1 ? `${post.title}, image ${i + 1} of ${imagePaths.length}` : post.title}
+        loading={i ? "lazy" : undefined}
+        className="max-h-[80dvh] w-full object-contain"
+      />
+    </div>
+  );
 
-      <div className="flex flex-col gap-5 md:sticky md:top-20 md:self-start">
+  return (
+    // Phones: cover, then the details (so Request is one scroll away, not past every image), then the
+    // rest. md+: images stacked on the left, details sticky on the right across both image rows.
+    <article className="grid gap-6 md:grid-cols-[3fr_2fr] md:gap-x-12 md:gap-y-3">
+      {/* ponytail: images stacked like a Behance project; add a carousel if long posts feel heavy */}
+      {image(0)}
+      {imagePaths.length > 1 && (
+        <div className="flex flex-col gap-3 max-md:order-last md:col-start-1 md:row-start-2">
+          {imagePaths.slice(1).map((_, i) => image(i + 1))}
+        </div>
+      )}
+
+      <div className="flex flex-col gap-5 md:sticky md:top-20 md:col-start-2 md:row-span-2 md:row-start-1 md:self-start">
         <Link
           href={profileHref(artist)}
           className="flex w-fit items-center gap-3 rounded-full py-1 pl-1 pr-4 hover:bg-secondary"
@@ -107,6 +118,13 @@ async function Post({ params }: { params: Promise<{ id: string }> }) {
                   <MessageCircle className="size-5" />
                 </Link>
               )}
+              <LikeButton
+                postId={post.id}
+                title={post.title}
+                liked={!!like}
+                signedIn={!!viewerId}
+                className={`${circleClass} data-[liked=true]:bg-primary data-[liked=true]:text-primary-foreground`}
+              />
             </>
           )}
         </div>

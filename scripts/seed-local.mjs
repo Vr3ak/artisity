@@ -23,6 +23,7 @@ const BUCKET = "profile-images";
 const db = createClient(url, key, { auth: { persistSession: false } });
 const publicUrl = (path) => `${url}/storage/v1/object/public/${BUCKET}/${path}?v=${Date.now()}`;
 const day = 86400000;
+const SHAPES = [[1200, 1600], [1600, 900], [1200, 1200], [1000, 1500], [1600, 1200], [900, 1600]];
 
 const ARTISTS = [
   {
@@ -132,7 +133,9 @@ for (const [i, a] of ARTISTS.entries()) {
   for (const [j, [title, category, count]] of a.posts.entries()) {
     const postId = crypto.randomUUID();
     const path = `${id}/posts/${postId}`;
-    for (let n = 0; n < count; n++) await upload(n ? `${path}-${n}` : path, `${postId}-${n}`, 1600, 900);
+    // Mixed shapes so the masonry feed has something to balance
+    const [w, h] = SHAPES[(i * 3 + j) % SHAPES.length];
+    for (let n = 0; n < count; n++) await upload(n ? `${path}-${n}` : path, `${postId}-${n}`, w, h);
     check(
       await db.from("posts").insert({
         id: postId, artist_id: id, image_path: path, image_count: count, title, category,

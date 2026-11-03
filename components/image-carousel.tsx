@@ -30,7 +30,7 @@ export function ImageCarousel({
   const arrow = "absolute top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-nav/80 opacity-0 shadow-md transition-opacity hover:bg-nav group-hover/carousel:opacity-100";
 
   return (
-    <div className="group/carousel relative size-full">
+    <div className="group/carousel relative isolate size-full">
       <div
         ref={ref}
         onScroll={(e) => setIndex(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}

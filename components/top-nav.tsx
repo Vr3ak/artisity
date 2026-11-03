@@ -94,15 +94,14 @@ export async function TopNav() {
           >
             <MessageCircle className="size-5" />
           </Link>
-          {/* ponytail: saved artists/posts don't exist yet */}
-          <span
-            aria-disabled
-            aria-label="Favorites (coming soon)"
-            title="Favorites (coming soon)"
-            className={`${iconButtonClass} ${soonClass}`}
+          <Link
+            href="/favorites"
+            aria-label="Favorites"
+            title="Favorites"
+            className={iconButtonClass}
           >
             <Heart className="size-5" />
-          </span>
+          </Link>
         </div>
         {!user && (
           <>
