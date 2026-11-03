@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Heart, Menu, MessageCircle, Plus } from "lucide-react";
 import { Button } from "./ui/button";
 import { NavMenu } from "./nav-menu";
+import { NavSearch } from "./nav-search";
 import { Avatar, TabBar } from "./tab-bar";
 import { createClient } from "@/lib/supabase/server";
 
@@ -72,7 +73,9 @@ export async function TopNav() {
         </Link>
       </nav>
 
-      <div className="ml-auto flex items-center gap-2">
+      <NavSearch />
+
+      <div className="ml-auto flex shrink-0 items-center gap-2">
         <div className="hidden items-center gap-2 md:flex">
           {role === "artist" && (
             <Link

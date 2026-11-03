@@ -2,13 +2,14 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { categoryLabel } from "@/lib/options";
-import { formatPrice, postImagePaths, profileHref, profileImageUrl } from "@/lib/utils";
+import { formatPrice, postImagePaths, profileHref, profileImageUrl, timeAgo } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { CategoryChips } from "@/components/category-chips";
 import { SiteFooter } from "@/components/site-footer";
 import { Loading } from "@/components/loading";
 import { ImageCarousel } from "@/components/image-carousel";
+import { PostHero } from "@/components/post-hero";
 
 type Service = { category: string; price_min: number; currency: string };
 type Artist = {
@@ -123,6 +124,31 @@ async function Posts() {
   );
 }
 
+// The newest real posts (not portfolio images) as the hero strip; nothing until someone posts
+async function Hero() {
+  const supabase = await createClient();
+  const { data: posts, error } = await supabase
+    .from("posts")
+    .select("id, title, image_path, created_at, artist:profiles!posts_artist_id_fkey(display_name, avatar_url)")
+    .order("created_at", { ascending: false })
+    .limit(8);
+  if (error) throw error;
+
+  const slides = posts.flatMap((p) => {
+    const artist = p.artist as unknown as { display_name: string | null; avatar_url: string | null } | null;
+    if (!artist) return [];
+    return {
+      id: p.id as string,
+      image: profileImageUrl(p.image_path),
+      title: p.title as string,
+      artist: artist.display_name,
+      avatar: artist.avatar_url,
+      ago: timeAgo(p.created_at),
+    };
+  });
+  return slides.length > 0 && <PostHero slides={slides} />;
+}
+
 function Avatar({ url, className }: { url: string | null; className: string }) {
   return (
     <span
@@ -141,15 +167,28 @@ function Avatar({ url, className }: { url: string | null; className: string }) {
   );
 }
 
+// Same box as a slide, so the page doesn't jump when the hero streams in
+function HeroSkeleton() {
+  return (
+    <div className="pt-2 [container-type:inline-size]">
+      <div className="mx-auto aspect-[16/10] w-[min(88cqw,78rem)] animate-pulse rounded-3xl bg-muted motion-reduce:animate-none sm:aspect-[21/9] lg:aspect-[3/1]" />
+    </div>
+  );
+}
+
 export default function Home() {
   return (
     <>
+      <Suspense fallback={<HeroSkeleton />}>
+        <Hero />
+      </Suspense>
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 p-4">
         <section className="flex flex-col gap-6 pt-6">
           <h1 className="text-left text-3xl font-bold tracking-tight sm:text-5xl">
             Embrace HUMAN Creativity
           </h1>
-          <form action="/artists" role="search" className="relative w-full">
+          {/* NavSearch (components/nav-search.tsx) docks a compact copy into the nav once this scrolls away */}
+          <form id="home-search" action="/artists" role="search" className="relative w-full">
             <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"

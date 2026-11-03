@@ -91,3 +91,9 @@
     @apply bg-primary text-primary-foreground;
   }
 }
+
+/* Home hero: the active dot's fill doubles as the autoplay timer (components/post-hero.tsx) */
+@keyframes hero-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}

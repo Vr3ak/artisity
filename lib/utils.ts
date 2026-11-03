@@ -97,3 +97,14 @@ export function contactLinks(
     return { key, label, href: base + handle };
   });
 }
+
+// "3 hours ago", "yesterday": the largest whole unit since `iso`
+const AGO_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
+  ["year", 31536000], ["month", 2592000], ["week", 604800], ["day", 86400], ["hour", 3600], ["minute", 60],
+];
+export function timeAgo(iso: string, now = Date.now()) {
+  const s = (now - new Date(iso).getTime()) / 1000;
+  const fmt = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  for (const [unit, size] of AGO_UNITS) if (s >= size) return fmt.format(-Math.floor(s / size), unit);
+  return "just now";
+}
