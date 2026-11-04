@@ -45,6 +45,7 @@
     --radius: 0.5rem;
     --shadow: 0 0% 0% / 0.6;
     --scrim: 0 3% 8% / 0.75; /* behind modals */
+    --online: 142 69% 58%; /* #4ADE80, "Active now" dot */
   }
 
   .light {
@@ -72,6 +73,7 @@
     --ring: 33 100% 15%;
     --shadow: 30 60% 20% / 0.18;
     --scrim: 33 100% 10% / 0.45;
+    --online: 142 72% 29%; /* #15803D, 4.4:1 on background */
   }
 }
 

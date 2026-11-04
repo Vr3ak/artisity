@@ -9,6 +9,7 @@ import { SafetyMenu } from "@/components/safety-menu";
 import { Avatar } from "@/components/tab-bar";
 import { profileHref } from "@/lib/utils";
 import { Loading } from "@/components/loading";
+import { OnlineDot, OnlineLabel } from "@/components/online";
 
 async function Chat({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -33,7 +34,7 @@ async function Chat({ params }: { params: Promise<{ id: string }> }) {
         <Link
           href="/messages"
           aria-label="Back to messages"
-          className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-secondary"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-secondary md:hidden"
         >
           <ChevronLeft className="size-6" />
         </Link>
@@ -41,10 +42,16 @@ async function Chat({ params }: { params: Promise<{ id: string }> }) {
           href={profileHref(other)}
           className="flex min-w-0 items-center gap-3 rounded-full py-1 pl-1 pr-3 hover:bg-secondary"
         >
-          <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary">
-            <Avatar url={other.avatar_url} className="size-9" />
+          <span className="relative shrink-0">
+            <span className="flex size-9 items-center justify-center overflow-hidden rounded-full bg-secondary">
+              <Avatar url={other.avatar_url} className="size-9" />
+            </span>
+            <OnlineDot userId={other.id} />
           </span>
-          <h1 className="truncate font-semibold">{chat.names[other.id]}</h1>
+          <span className="min-w-0">
+            <h2 className="truncate font-semibold">{chat.names[other.id]}</h2>
+            <OnlineLabel userId={other.id} />
+          </span>
         </Link>
         <div className="ml-auto">
           <SafetyMenu
@@ -60,6 +67,8 @@ async function Chat({ params }: { params: Promise<{ id: string }> }) {
           conversationId={id}
           userId={user.sub}
           partnerName={chat.names[other.id]}
+          partnerAvatar={other.avatar_url}
+          partnerReadId={chat.reads[other.id]}
           messages={chat.messages}
           blocked={!!block}
         />
@@ -68,13 +77,14 @@ async function Chat({ params }: { params: Promise<{ id: string }> }) {
   );
 }
 
+// The right pane of app/messages/layout.tsx, which sets the height
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   return (
-    // Full-height pane between the 4rem top bar and, below md, the 4rem tab bar
-    <main className="mx-auto flex h-[calc(100dvh-8rem-env(safe-area-inset-bottom))] w-full max-w-3xl flex-col md:h-[calc(100dvh-4rem)]">
+    // data-chat: on phones the layout hides the conversation list while this is open
+    <div data-chat className="flex min-h-0 flex-1 flex-col">
       <Suspense fallback={<Loading />}>
         <Chat params={params} />
       </Suspense>
-    </main>
+    </div>
   );
 }

@@ -8,11 +8,15 @@ import { ChatMessageItem, TypingBubble, attachmentKind, formatBytes } from '@/co
 import { useChatScroll } from '@/hooks/use-chat-scroll'
 import { MAX_ATTACHMENT_BYTES, type ChatMessage } from '@/lib/chat'
 import { useRealtimeChat } from '@/hooks/use-realtime-chat'
+import { Avatar } from '@/components/tab-bar'
 
 interface RealtimeChatProps {
   conversationId: string
   userId: string
   partnerName: string
+  partnerAvatar?: string | null
+  // The partner's conversation_reads.last_read_id, for the "Seen" avatar
+  partnerReadId?: number | null
   messages?: ChatMessage[]
   // The viewer has blocked the partner: the composer becomes a notice
   blocked?: boolean
@@ -44,16 +48,31 @@ function dayLabel(iso: string) {
  * @param conversationId - public.conversations id
  * @param userId - the viewer's id, to align their own messages
  * @param partnerName - the other participant's display name
+ * @param partnerAvatar - their avatar URL, shown small under the last message they've seen
+ * @param partnerReadId - how far they've read, from conversation_reads
  * @param messages - messages already loaded from the database
  * @param blocked - the viewer has blocked the partner
  */
-export const RealtimeChat = ({ conversationId, userId, partnerName, messages: initialMessages = [], blocked = false }: RealtimeChatProps) => {
+export const RealtimeChat = ({
+  conversationId,
+  userId,
+  partnerName,
+  partnerAvatar,
+  partnerReadId: initialPartnerReadId,
+  messages: initialMessages = [],
+  blocked = false,
+}: RealtimeChatProps) => {
   const { containerRef, scrollToBottom, isNearBottom } = useChatScroll()
-  const { messages, isConnected, partnerTyping, setTyping, sendMessage, editMessage, deleteMessage } = useRealtimeChat({
+  const { messages, isConnected, partnerTyping, partnerReadId, setTyping, sendMessage, editMessage, deleteMessage } = useRealtimeChat({
     conversationId,
     userId,
     initialMessages,
+    initialPartnerReadId,
   })
+  // LinkedIn-style receipt: the partner's avatar under the newest of the viewer's messages they've seen
+  const seenId = partnerReadId
+    ? messages.findLast((m) => m.sender_id === userId && m.id <= partnerReadId)?.id
+    : undefined
 
   const [text, setText] = useState('')
   const [file, setFile] = useState<File | null>(null)
@@ -235,6 +254,14 @@ export const RealtimeChat = ({ conversationId, userId, partnerName, messages: in
                 onDelete={setConfirmDelete}
                 onMediaLoad={onMediaLoad}
               />
+              {message.id === seenId && (
+                <p className="mt-1 flex justify-end pr-1" title={`Seen by ${partnerName}`}>
+                  <span className="flex size-4 items-center justify-center overflow-hidden rounded-full bg-secondary [&_svg]:size-3">
+                    <Avatar url={partnerAvatar} className="size-4" />
+                  </span>
+                  <span className="sr-only">Seen by {partnerName}</span>
+                </p>
+              )}
             </Fragment>
           )
         })}

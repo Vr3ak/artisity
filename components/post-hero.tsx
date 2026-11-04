@@ -14,7 +14,10 @@ export type HeroSlide = {
   ago: string;
 };
 
-export function PostHero({ slides }: { slides: HeroSlide[] }) {
+export function PostHero({ slides: initial }: { slides: HeroSlide[] }) {
+  // Frozen at mount: a like calls router.refresh(), which can reorder the ranking, and the carousel
+  // shouldn't swap slides under the viewer. A fresh visit gets the new order.
+  const [slides] = useState(initial);
   const track = useRef<HTMLUListElement>(null);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -121,7 +124,7 @@ export function PostHero({ slides }: { slides: HeroSlide[] }) {
                     <span
                       key={index}
                       onAnimationEnd={() => go(index + 1)}
-                      className="absolute inset-0 origin-left animate-[hero-progress_6s_linear] bg-primary"
+                      className="absolute inset-0 origin-left animate-[hero-progress_4s_linear] bg-primary"
                       style={{ animationPlayState: paused || hold ? "paused" : "running" }}
                     />
                   )}

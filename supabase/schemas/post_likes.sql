@@ -30,6 +30,8 @@ grant select, insert, delete on public.post_likes to authenticated;
 
 -- Users can't update posts, so the like total is kept here. Row-level +1/-1 updates are atomic.
 -- On a post's cascading delete the update finds no row, which is fine.
+-- An artist's likes on their own posts are kept (their heart works) but not counted, so they can't
+-- push themselves into the hero.
 create function private.count_post_like()
 returns trigger
 language plpgsql
@@ -38,9 +40,9 @@ set search_path = ''
 as $$
 begin
   if tg_op = 'INSERT' then
-    update public.posts set like_count = like_count + 1 where id = new.post_id;
+    update public.posts set like_count = like_count + 1 where id = new.post_id and artist_id <> new.user_id;
   else
-    update public.posts set like_count = like_count - 1 where id = old.post_id;
+    update public.posts set like_count = like_count - 1 where id = old.post_id and artist_id <> old.user_id;
   end if;
   return null;
 end;

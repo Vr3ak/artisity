@@ -44,8 +44,16 @@ export async function loadChat(supabase: SupabaseClient, conversationId: string)
     .limit(100);
   if (messagesError) throw messagesError;
 
+  // Both participants' read receipts (conversation_reads); RLS lets each side see the other's
+  const { data: reads, error: readsError } = await supabase
+    .from("conversation_reads")
+    .select("user_id, last_read_id")
+    .eq("conversation_id", conversationId);
+  if (readsError) throw readsError;
+
   const people = [conversation.client, conversation.artist] as unknown as Person[];
   return {
+    reads: Object.fromEntries(reads.map((r) => [r.user_id as string, r.last_read_id as number])),
     people,
     names: Object.fromEntries(people.map((p) => [p.id, p.display_name ?? "Unnamed"])),
     messages: (messages as ChatMessage[]).reverse(),

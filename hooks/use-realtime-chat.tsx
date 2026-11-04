@@ -16,15 +16,20 @@ interface UseRealtimeChatProps {
   conversationId: string
   userId: string
   initialMessages: ChatMessage[]
+  // conversation_reads.last_read_id of the other participant, if they've opened the thread
+  initialPartnerReadId?: number | null
 }
 
 // Messages persist in public.messages; postgres_changes pushes inserts and updates (edits,
 // soft deletes) the viewer may select (RLS). Typing goes over broadcast on the same channel.
-export function useRealtimeChat({ conversationId, userId, initialMessages }: UseRealtimeChatProps) {
+// Read receipts: while the thread is open and the tab visible, the viewer's conversation_reads row
+// follows the newest message; postgres_changes on that table brings the partner's.
+export function useRealtimeChat({ conversationId, userId, initialMessages, initialPartnerReadId = null }: UseRealtimeChatProps) {
   const [supabase] = useState(createClient)
   const [messages, setMessages] = useState(initialMessages)
   const [isConnected, setIsConnected] = useState(false)
   const [partnerTyping, setPartnerTyping] = useState(false)
+  const [partnerReadId, setPartnerReadId] = useState(initialPartnerReadId)
   const channel = useRef<RealtimeChannel | null>(null)
   const lastTypingSent = useRef(0)
 
@@ -52,6 +57,10 @@ export function useRealtimeChat({ conversationId, userId, initialMessages }: Use
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter }, (payload) =>
         upsert(payload.new as ChatMessage)
       )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversation_reads', filter }, (payload) => {
+        const read = payload.new as { user_id?: string; last_read_id?: number }
+        if (read.user_id && read.user_id !== userId && read.last_read_id) setPartnerReadId(read.last_read_id)
+      })
       .on('broadcast', { event: 'typing' }, ({ payload }) => {
         clearTimeout(typingTimer)
         setPartnerTyping(!!payload.typing)
@@ -66,6 +75,24 @@ export function useRealtimeChat({ conversationId, userId, initialMessages }: Use
       supabase.removeChannel(ch)
     }
   }, [conversationId, supabase, upsert, userId])
+
+  // Mark read up to the newest message when it arrives or the tab comes back into view.
+  // The trigger ignores backward moves, so a stale write from another tab is harmless.
+  const lastId = messages.at(-1)?.id
+  const markedRead = useRef(0)
+  useEffect(() => {
+    const mark = async () => {
+      if (!lastId || lastId <= markedRead.current || document.visibilityState !== 'visible') return
+      markedRead.current = lastId
+      const { error } = await supabase
+        .from('conversation_reads')
+        .upsert({ conversation_id: conversationId, last_read_id: lastId }, { onConflict: 'conversation_id,user_id' })
+      if (error) markedRead.current = 0 // retry on the next message or visibility change
+    }
+    mark()
+    document.addEventListener('visibilitychange', mark)
+    return () => document.removeEventListener('visibilitychange', mark)
+  }, [conversationId, lastId, supabase])
 
   // Throttled "typing" pings while the composer has text; one "stopped" when it clears or sends
   const setTyping = useCallback((typing: boolean) => {
@@ -128,5 +155,5 @@ export function useRealtimeChat({ conversationId, userId, initialMessages }: Use
     [supabase, upsert]
   )
 
-  return { messages, isConnected, partnerTyping, setTyping, sendMessage, editMessage, deleteMessage }
+  return { messages, isConnected, partnerTyping, partnerReadId, setTyping, sendMessage, editMessage, deleteMessage }
 }

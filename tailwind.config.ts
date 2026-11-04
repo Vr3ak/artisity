@@ -16,6 +16,7 @@ export default {
         background: "hsl(var(--background))",
         nav: "hsl(var(--nav))",
         scrim: "hsl(var(--scrim))",
+        online: "hsl(var(--online))",
         // Brand palette for accents outside the semantic tokens
         brand: {
           cream: "#F9E6A8",

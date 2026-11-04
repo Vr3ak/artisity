@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { NavMenu } from "./nav-menu";
 import { NavSearch } from "./nav-search";
 import { Avatar, TabBar } from "./tab-bar";
+import { Presence } from "./online";
 import { createClient } from "@/lib/supabase/server";
 
 // Layout follows vgen.co: the bar shares the page background; text links on the left,
@@ -34,6 +35,7 @@ export async function TopNav() {
 
   return (
     <>
+      {user && <Presence userId={user.sub} />}
       <Link href="/" aria-label="Artisity home" className="shrink-0">
         {/* Cream logo on the dark theme, brown logo on the light theme */}
         {/* eslint-disable-next-line @next/next/no-img-element */}

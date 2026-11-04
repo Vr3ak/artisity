@@ -38,22 +38,22 @@ async function Posts() {
   );
 }
 
-// Featured posts in the hero: the most liked (newest first on ties); nothing until a post gets a like.
+// Featured posts in the hero: the most liked, newest first on ties (so with no likes yet it's simply
+// the newest). No like_count > 0 filter: the hero must not pop in or out when someone likes a card.
+// !inner drops posts whose artist RLS hides before the limit, so they can't eat hero slots.
 // ponytail: all-time likes, so early hits stay up top; count recent likes if the hero goes stale
 async function Hero() {
   const supabase = await createClient();
   const { data: posts, error } = await supabase
     .from("posts")
-    .select("id, title, image_path, created_at, artist:profiles!posts_artist_id_fkey(display_name, avatar_url)")
-    .gt("like_count", 0)
+    .select("id, title, image_path, created_at, artist:profiles!posts_artist_id_fkey!inner(display_name, avatar_url)")
     .order("like_count", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(8);
   if (error) throw error;
 
-  const slides = posts.flatMap((p) => {
-    const artist = p.artist as unknown as { display_name: string | null; avatar_url: string | null } | null;
-    if (!artist) return [];
+  const slides = posts.map((p) => {
+    const artist = p.artist as unknown as { display_name: string | null; avatar_url: string | null };
     return {
       id: p.id as string,
       image: profileImageUrl(p.image_path),
