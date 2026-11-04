@@ -38,11 +38,15 @@ async function Posts() {
   );
 }
 
+// Featured posts in the hero: the most liked (newest first on ties); nothing until a post gets a like.
+// ponytail: all-time likes, so early hits stay up top; count recent likes if the hero goes stale
 async function Hero() {
   const supabase = await createClient();
   const { data: posts, error } = await supabase
     .from("posts")
     .select("id, title, image_path, created_at, artist:profiles!posts_artist_id_fkey(display_name, avatar_url)")
+    .gt("like_count", 0)
+    .order("like_count", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(8);
   if (error) throw error;

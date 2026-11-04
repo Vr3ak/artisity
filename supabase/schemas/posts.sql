@@ -11,6 +11,8 @@ create table public.posts (
   caption text not null default '' check (char_length(caption) <= 2000),
   category public.art_category,
   created_at timestamptz not null default now(),
+  -- Kept by private.count_post_like (post_likes.sql); the home hero features the most-liked posts
+  like_count integer not null default 0 check (like_count >= 0),
   -- New posts live at <artist>/posts/<id>; posts converted from the old onboarding portfolio keep
   -- their file at <artist>/portfolio/<uuid>
   check (
@@ -39,4 +41,6 @@ create policy "posts: delete own" on public.posts
 -- ponytail: no update grant; delete and repost to change a post
 revoke all on public.posts from anon, authenticated;
 grant select on public.posts to anon;
-grant select, insert, delete on public.posts to authenticated;
+grant select, delete on public.posts to authenticated;
+-- Every column but like_count, so nobody can post with a made-up count
+grant insert (id, artist_id, image_path, image_count, title, caption, category, created_at) on public.posts to authenticated;
