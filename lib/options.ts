@@ -10,6 +10,7 @@ export const CATEGORIES = [
   { value: "streaming_asset", label: "Streaming Asset" },
   { value: "writing", label: "Writing" },
   { value: "ui_ux", label: "UI/UX Design" },
+  { value: "fine_art", label: "Fine Art" },
 ] as const;
 
 export type Category = (typeof CATEGORIES)[number]["value"];

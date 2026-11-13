@@ -8,7 +8,7 @@ create type public.user_role as enum ('client', 'artist', 'admin');
 -- Mirrors CATEGORIES in lib/options.ts
 create type public.art_category as enum (
   'illustration', 'branding_graphic', 'model_3d_2d', 'video_animation', 'game_asset',
-  'emote', 'scene_concept_art', 'streaming_asset', 'writing', 'ui_ux'
+  'emote', 'scene_concept_art', 'streaming_asset', 'writing', 'ui_ux', 'fine_art'
 );
 
 -- App-side user data. Identity (email, password) stays in auth.users.
@@ -22,7 +22,7 @@ create table public.profiles (
   role public.user_role,
   location text check (char_length(location) <= 60),
   -- artist: categories offered; client: what they're looking for
-  categories public.art_category[] not null default '{}' check (cardinality(categories) <= 10),
+  categories public.art_category[] not null default '{}' check (cardinality(categories) <= 20),
   business_name text check (char_length(business_name) <= 100),
   business_type text check (char_length(business_type) <= 60),
   -- Public handle for /@username URLs; null until chosen at sign-up or onboarding

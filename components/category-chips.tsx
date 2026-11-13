@@ -11,6 +11,7 @@ import {
   LayoutGrid,
   LayoutTemplate,
   Mountain,
+  Palette,
   PenTool,
   Radio,
   Smile,
@@ -32,6 +33,7 @@ const ICONS: Record<Category, { Icon: LucideIcon; from: string; to: string }> = 
   streaming_asset: { Icon: Radio, from: "#BBA6FF", to: "#6D28D9" },
   writing: { Icon: Feather, from: "#D9FF73", to: "#65A30D" },
   ui_ux: { Icon: LayoutTemplate, from: "#8FB8FF", to: "#2557E8" },
+  fine_art: { Icon: Palette, from: "#FF9A9A", to: "#C81E3A" },
 };
 
 const chipClass =
