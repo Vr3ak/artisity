@@ -15,7 +15,7 @@ async function NewPost() {
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("role, categories, services(category)")
+    .select("role, services(category)")
     .eq("id", user.sub)
     .maybeSingle();
   if (error) throw error;
@@ -24,14 +24,8 @@ async function NewPost() {
   if (!profile.role) redirect("/onboarding");
   if (profile.role !== "artist") notFound();
 
-  // Priced services first; fall back to the categories the artist lists
   const services = (profile.services as { category: string }[]).map((s) => s.category);
-  return (
-    <PostForm
-      userId={user.sub}
-      categories={services.length ? services : (profile.categories as string[])}
-    />
-  );
+  return <PostForm userId={user.sub} services={services} />;
 }
 
 export default function Page() {

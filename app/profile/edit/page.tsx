@@ -15,7 +15,7 @@ async function Profile() {
     supabase
       .from("profiles")
       .select(
-        "display_name, username, bio, avatar_url, cover_url, location, role, business_name, business_type",
+        "display_name, username, bio, avatar_url, cover_url, location, role, business_name, business_type, services(category, currency, price_min, price_max)",
       )
       .eq("id", user.sub)
       .maybeSingle(),
@@ -50,6 +50,7 @@ async function Profile() {
           facebook: contact?.facebook ?? "",
           instagram: contact?.instagram ?? "",
         }}
+        services={profile.services ?? []}
         userId={user.sub}
       />
     </>

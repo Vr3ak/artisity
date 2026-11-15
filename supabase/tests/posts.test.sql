@@ -1,7 +1,7 @@
 -- npx supabase test db --local
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(9);
+select plan(12);
 
 -- artist (a), second artist (b), client (c)
 insert into auth.users (id, email) values
@@ -42,6 +42,8 @@ select throws_ok($$
 $$, '42501', null, 'clients cannot post');
 
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000b');
+update public.posts set title = 'hijacked';
+select is((select title from public.posts where id = '00000000-0000-0000-0000-0000000000f1'), 'Temple at dusk', 'others cannot edit a post');
 delete from public.posts;
 select is((select count(*) from public.posts where id = '00000000-0000-0000-0000-0000000000f1'), 1::bigint, 'others cannot delete a post');
 
@@ -50,7 +52,11 @@ select is((select title from public.posts where id = '00000000-0000-0000-0000-00
 
 set local role authenticated;
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
-select throws_ok($$ update public.posts set title = 'edited' where id = '00000000-0000-0000-0000-0000000000f1' $$, '42501', null, 'posts are not editable');
+select lives_ok($$
+  update public.posts set title = 'edited', caption = 'new', category = 'fine_art' where id = '00000000-0000-0000-0000-0000000000f1'
+$$, 'owner edits title, caption and category');
+select throws_ok($$ update public.posts set image_count = 2 where id = '00000000-0000-0000-0000-0000000000f1' $$, '42501', null, 'images are not editable');
+select throws_ok($$ update public.posts set like_count = 999 where id = '00000000-0000-0000-0000-0000000000f1' $$, '42501', null, 'like_count is not editable');
 delete from public.posts;
 select is((select count(*) from public.posts where id = '00000000-0000-0000-0000-0000000000f1'), 0::bigint, 'owner deletes their post');
 

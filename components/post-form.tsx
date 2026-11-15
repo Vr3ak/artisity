@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { categoryLabel } from "@/lib/options";
+import { CATEGORIES } from "@/lib/options";
 import { compressImage } from "@/lib/upload";
 import { cn, postImagePaths } from "@/lib/utils";
 import { FormError } from "@/components/auth-parts";
@@ -16,13 +16,31 @@ const MAX_GIF_BYTES = 7 * 1024 * 1024; // profile-images bucket file_size_limit;
 // Other images are resized before upload; this only stops huge files from choking the decoder
 const MAX_INPUT_BYTES = 50 * 1024 * 1024;
 
+export type EditablePost = {
+  id: string;
+  title: string;
+  caption: string;
+  category: string | null;
+  imageUrls: string[];
+};
+
 // New post: 1-10 images (the first is the cover), a title, an optional category and caption.
 // Images go to <uid>/posts/<post id>[-n] in profile-images, the paths the posts table requires.
-export function PostForm({ userId, categories }: { userId: string; categories: string[] }) {
+// With `post`, edits that post's text; images can't change (only title/caption/category are updatable).
+export function PostForm({
+  userId,
+  services,
+  post,
+}: {
+  userId: string;
+  // The artist's offered categories, listed first; any category can be picked
+  services: string[];
+  post?: EditablePost;
+}) {
   const [files, setFiles] = useState<File[]>([]);
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState(categories[0] ?? "");
-  const [caption, setCaption] = useState("");
+  const [title, setTitle] = useState(post?.title ?? "");
+  const [category, setCategory] = useState(post ? (post.category ?? "") : (services[0] ?? ""));
+  const [caption, setCaption] = useState(post?.caption ?? "");
   const [uploaded, setUploaded] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -42,8 +60,27 @@ export function PostForm({ userId, categories }: { userId: string; categories: s
     setFiles((fs) => [...fs, ...ok].slice(0, MAX_IMAGES));
   };
 
+  const save = async (id: string) => {
+    setUploaded(0);
+    setError(null);
+    const { error } = await createClient()
+      .from("posts")
+      .update({ title: title.trim(), caption: caption.trim(), category: category || null })
+      .eq("id", id);
+    if (error) {
+      setUploaded(null);
+      return setError(error.message);
+    }
+    router.push(`/posts/${id}`);
+    router.refresh();
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (post) {
+      if (!title.trim()) return setError("Give your post a title.");
+      return save(post.id);
+    }
     if (!files.length) return setError("Add at least one image of your work.");
     if (!title.trim()) return setError("Give your post a title.");
     setUploaded(0);
@@ -86,6 +123,16 @@ export function PostForm({ userId, categories }: { userId: string; categories: s
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-6 rounded-3xl bg-nav p-6 sm:p-8">
+      {post ? (
+        <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {post.imageUrls.map((url, i) => (
+            <li key={url} className="aspect-square overflow-hidden rounded-xl bg-secondary">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url} alt={`Image ${i + 1}`} className="size-full object-cover" />
+            </li>
+          ))}
+        </ul>
+      ) : (
       <div className="flex flex-col gap-2">
         <ul
           onDragOver={(e) => e.preventDefault()}
@@ -138,6 +185,7 @@ export function PostForm({ userId, categories }: { userId: string; categories: s
           </p>
         )}
       </div>
+      )}
 
       <Field label="Title">
         {(id) => (
@@ -151,20 +199,27 @@ export function PostForm({ userId, categories }: { userId: string; categories: s
         )}
       </Field>
 
-      {categories.length > 0 && (
-        <Field label="Category" >
-          {(id) => (
-            <SelectField id={id} value={category} onChange={(e) => setCategory(e.target.value)}>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {categoryLabel(c)}
-                </option>
-              ))}
-              <option value="">No category</option>
-            </SelectField>
-          )}
-        </Field>
-      )}
+      <Field label="Category">
+        {(id) => (
+          <SelectField id={id} value={category} onChange={(e) => setCategory(e.target.value)}>
+            <option value="">No category</option>
+            {[true, false].map((offered) => {
+              const group = CATEGORIES.filter((c) => services.includes(c.value) === offered);
+              return (
+                group.length > 0 && (
+                  <optgroup key={String(offered)} label={offered ? "Your services" : "Other categories"}>
+                    {group.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                )
+              );
+            })}
+          </SelectField>
+        )}
+      </Field>
 
       <Field label="Caption">
         {(id) => (
@@ -183,7 +238,11 @@ export function PostForm({ userId, categories }: { userId: string; categories: s
       <FormError message={error} />
       <button type="submit" disabled={busy} className={cn(pillClass.final, "gap-2")}>
         {busy && <Loader2 className="size-4 animate-spin" />}
-        {!busy
+        {post
+          ? busy
+            ? "Saving…"
+            : "Save changes"
+          : !busy
           ? "Post"
           : uploaded! < files.length
             ? `Uploading ${uploaded}/${files.length}…`
