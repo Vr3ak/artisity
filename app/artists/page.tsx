@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { CATEGORIES, categoryLabel } from "@/lib/options";
 import { formatPrice, profileHref } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
+import { MapPin } from "lucide-react";
 import { CategoryChips } from "@/components/category-chips";
 import { Loading } from "@/components/loading";
 import { RatingSummary } from "@/components/stars";
@@ -36,7 +36,7 @@ async function ArtistGrid({
       <CategoryChips
         withAll
         active={CATEGORIES.some((c) => c.value === category) ? category : undefined}
-        bleed="-mx-5 px-5"
+        bleed="-mx-4 px-4"
       />
       {artists.length === 0 ? (
         <p className="text-muted-foreground">
@@ -47,36 +47,53 @@ async function ArtistGrid({
               : "No artists yet."}
         </p>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {artists.map((a) => {
             // ponytail: "from" price uses the first service; mixed USD/KHR isn't comparable without FX rates
             const from = (a.services as Service[])[0];
             return (
               <li key={a.id}>
-                <Link href={profileHref(a)} className="flex flex-col gap-2 rounded-lg border p-4 hover:bg-muted">
+                <Link
+                  href={profileHref(a)}
+                  className="flex h-full flex-col gap-4 rounded-3xl bg-card p-5 transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
                   <div className="flex items-center gap-3">
-                    <div className="size-12 shrink-0 overflow-hidden rounded-full bg-muted">
+                    <div className="size-14 shrink-0 overflow-hidden rounded-full bg-secondary">
                       {a.avatar_url && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={a.avatar_url} alt="" referrerPolicy="no-referrer" className="size-full object-cover" />
                       )}
                     </div>
-                    <div>
-                      <p className="font-medium">{a.display_name}</p>
-                      <p className="text-sm text-muted-foreground">{a.location}</p>
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      <p className="truncate text-lg font-semibold leading-tight">{a.display_name ?? "Unnamed"}</p>
+                      {a.location && (
+                        <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <MapPin className="size-3.5 shrink-0" />
+                          <span className="truncate">{a.location}</span>
+                        </p>
+                      )}
                       {/* ponytail: averages every review in JS; move to a stored or SQL aggregate at a few thousand reviews */}
-                      <RatingSummary reviews={a.reviews as { rating: number }[]} className="text-sm" />
+                      {(a.reviews as unknown[]).length > 0 && (
+                        <RatingSummary reviews={a.reviews as { rating: number }[]} className="text-sm" />
+                      )}
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {(a.categories as string[]).map((c) => (
-                      <Badge key={c} variant="secondary">
-                        {categoryLabel(c)}
-                      </Badge>
-                    ))}
-                  </div>
+                  {(a.categories as string[]).length > 0 && (
+                    <ul className="flex flex-wrap gap-1.5">
+                      {(a.categories as string[]).map((c) => (
+                        <li key={c} className="inline-flex h-7 items-center rounded-full bg-secondary px-3 text-xs font-semibold">
+                          {categoryLabel(c)}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   {from && (
-                    <p className="text-sm">From {formatPrice(from.price_min, from.price_min, from.currency)}</p>
+                    <p className="mt-auto text-sm text-muted-foreground">
+                      From{" "}
+                      <span className="font-semibold tabular-nums text-foreground">
+                        {formatPrice(from.price_min, from.price_min, from.currency)}
+                      </span>
+                    </p>
                   )}
                 </Link>
               </li>
@@ -94,8 +111,8 @@ export default function Page({
   searchParams: Promise<{ category?: string; q?: string }>;
 }) {
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-5">
-      <h1 className="text-2xl font-semibold">Find an artist</h1>
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 md:py-10">
+      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Find an artist</h1>
       <Suspense fallback={<Loading />}>
         <ArtistGrid searchParams={searchParams} />
       </Suspense>
