@@ -118,8 +118,6 @@ export function ProfileForm({
       if (!name.trim()) throw new Error("Add a display name.");
       const badUsername = username && usernameError(username);
       if (badUsername) throw new Error(badUsername);
-      if (isClient && !businessType)
-        throw new Error("Choose what best describes you.");
       const contactValues = contactRow(contacts);
       if (isArtist && !categories.length) throw new Error("Pick at least one service.");
       const services = isArtist ? buildServiceRows(userId, categories, prices) : [];
@@ -152,7 +150,7 @@ export function ProfileForm({
           ...(isArtist && { categories }),
           ...(isClient && {
             business_name: businessName.trim() || null,
-            business_type: businessType,
+            business_type: businessType || null,
           }),
           ...(avatar && {
             avatar_url: await uploadImage(supabase, `${userId}/avatar`, avatar, 800),
