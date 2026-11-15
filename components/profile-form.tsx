@@ -7,7 +7,7 @@ import {
   toUsername,
   usernameError,
 } from "@/lib/utils";
-import { BUSINESS_TYPES, PROVINCES } from "@/lib/options";
+import { BUSINESS_TYPES, PROVINCES, type Category, type Currency } from "@/lib/options";
 import { FormError } from "@/components/auth-parts";
 import {
   Field,
@@ -19,10 +19,14 @@ import {
 import {
   ContactFields,
   ImagesEditor,
+  ServicesFields,
+  buildServiceRows,
   contactRow,
   useObjectUrl,
   type Contacts,
+  type Prices,
 } from "@/components/profile-fields";
+import type { Service } from "@/components/profile-view";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -39,16 +43,18 @@ export type Profile = {
 };
 
 function Section({
+  id,
   title,
   description,
   children,
 }: {
+  id?: string;
   title: string;
   description?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-6 rounded-3xl bg-nav p-6 sm:p-8">
+    <section id={id} className="flex scroll-mt-24 flex-col gap-6 rounded-3xl bg-nav p-6 sm:p-8">
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
         {description && (
@@ -64,13 +70,25 @@ function Section({
 export function ProfileForm({
   profile,
   contacts: initialContacts,
+  services: initialServices,
   userId,
 }: {
   profile: Profile;
   contacts: Contacts;
+  services: Service[];
   userId: string;
 }) {
   const isClient = profile.role === "client";
+  const isArtist = profile.role === "artist";
+  const [categories, setCategories] = useState(initialServices.map((s) => s.category as Category));
+  const [prices, setPrices] = useState<Prices>(() =>
+    Object.fromEntries(
+      initialServices.map((s) => [
+        s.category,
+        { currency: s.currency as Currency, min: String(s.price_min), max: String(s.price_max) },
+      ]),
+    ),
+  );
   const [name, setName] = useState(profile.display_name ?? "");
   const [username, setUsername] = useState(profile.username ?? "");
   const [bio, setBio] = useState(profile.bio ?? "");
@@ -103,6 +121,20 @@ export function ProfileForm({
       if (isClient && !businessType)
         throw new Error("Choose what best describes you.");
       const contactValues = contactRow(contacts);
+      if (isArtist && !categories.length) throw new Error("Pick at least one service.");
+      const services = isArtist ? buildServiceRows(userId, categories, prices) : [];
+
+      if (isArtist) {
+        // Upsert first, then drop the unpicked ones, so a failure never leaves the artist with none
+        const { error: upError } = await supabase.from("services").upsert(services);
+        if (upError) throw upError;
+        const { error: delError } = await supabase
+          .from("services")
+          .delete()
+          .eq("artist_id", userId)
+          .not("category", "in", `(${categories.join(",")})`);
+        if (delError) throw delError;
+      }
 
       const { error: contactError } = await supabase
         .from("contact_methods")
@@ -116,6 +148,8 @@ export function ProfileForm({
           username: username || null,
           bio: bio.trim() || null,
           location: location || null,
+          // profiles.categories mirrors the services for artists (the /artists list reads it)
+          ...(isArtist && { categories }),
           ...(isClient && {
             business_name: businessName.trim() || null,
             business_type: businessType,
@@ -251,6 +285,17 @@ export function ProfileForm({
           </>
         )}
       </Section>
+
+      {isArtist && (
+        <Section id="services" title="Services" description="What clients can commission from you, and your price range for each.">
+          <ServicesFields
+            categories={categories}
+            onCategories={setCategories}
+            prices={prices}
+            onPrices={setPrices}
+          />
+        </Section>
+      )}
 
       <Section
         title="Social links"

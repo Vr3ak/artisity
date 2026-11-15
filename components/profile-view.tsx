@@ -238,6 +238,14 @@ export function ProfileView({
             ))}
           </nav>
 
+          {tab === "commissions" && isOwn && isArtist && (
+            <Link
+              href="/profile/edit#services"
+              className={`${pillClass} w-fit self-end border border-input hover:bg-secondary`}
+            >
+              Edit services
+            </Link>
+          )}
           {tab === "commissions" ? (
             services.length === 0 ? (
               <p className="py-10 text-center text-muted-foreground">

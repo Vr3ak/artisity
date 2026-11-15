@@ -38,9 +38,15 @@ create policy "posts: delete own" on public.posts
   for delete to authenticated
   using ((select auth.uid()) = artist_id);
 
--- ponytail: no update grant; delete and repost to change a post
+-- Owners can edit the text; images are fixed (delete and repost to change them)
+create policy "posts: update own" on public.posts
+  for update to authenticated
+  using ((select auth.uid()) = artist_id)
+  with check ((select auth.uid()) = artist_id);
+
 revoke all on public.posts from anon, authenticated;
 grant select on public.posts to anon;
 grant select, delete on public.posts to authenticated;
 -- Every column but like_count, so nobody can post with a made-up count
 grant insert (id, artist_id, image_path, image_count, title, caption, category, created_at) on public.posts to authenticated;
+grant update (title, caption, category) on public.posts to authenticated;

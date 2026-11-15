@@ -9,12 +9,9 @@ import {
 } from "@/lib/utils";
 import {
   BUSINESS_TYPES,
-  CATEGORIES,
-  CURRENCIES,
   PROVINCES,
   categoryLabel,
   type Category,
-  type Currency,
 } from "@/lib/options";
 import { FormError } from "@/components/auth-parts";
 import {
@@ -33,13 +30,15 @@ import {
   IMAGE_TYPES,
   ImageTile,
   ImagesEditor,
+  ServicesFields,
+  buildServiceRows,
   contactRow,
   useObjectUrl,
+  type Prices,
 } from "@/components/profile-fields";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
-type Price = { currency: Currency; min: string; max: string };
 type Step =
   | "look"
   | "details"
@@ -84,7 +83,7 @@ export function OnboardingForm({
   const [businessType, setBusinessType] = useState("");
   // services / interests
   const [categories, setCategories] = useState<Category[]>([]);
-  const [prices, setPrices] = useState<Partial<Record<Category, Price>>>({});
+  const [prices, setPrices] = useState<Prices>({});
   // portfolio
   const [portfolio, setPortfolio] = useState<File[]>([]);
   // socials + contacts
@@ -112,32 +111,7 @@ export function OnboardingForm({
   };
   const back = stepIndex > 0 ? () => goTo(stepIndex - 1) : undefined;
 
-  const priceFor = (c: Category): Price =>
-    prices[c] ?? { currency: "USD", min: "", max: "" };
-  const setPrice = (c: Category, patch: Partial<Price>) =>
-    setPrices((p) => ({ ...p, [c]: { ...priceFor(c), ...patch } }));
-  const toggleCategory = (c: Category) =>
-    setCategories((cs) =>
-      cs.includes(c) ? cs.filter((x) => x !== c) : [...cs, c],
-    );
-
-  const buildServices = () =>
-    categories.map((c) => {
-      const p = priceFor(c);
-      const min = Number(p.min);
-      const max = Number(p.max);
-      if (p.min === "" || p.max === "" || min > max)
-        throw new Error(
-          `${categoryLabel(c)}: enter a minimum price no higher than the maximum.`,
-        );
-      return {
-        artist_id: userId,
-        category: c,
-        currency: p.currency,
-        price_min: min,
-        price_max: max,
-      };
-    });
+  const buildServices = () => buildServiceRows(userId, categories, prices);
 
   // Validates the current card, saving the username early so a taken one is caught on its own card
   const next = async (e: React.SubmitEvent<HTMLFormElement>) => {
@@ -406,82 +380,11 @@ export function OnboardingForm({
     return card(
       step === "services" ? "What do you offer?" : "What are you looking for?",
       <>
-        <fieldset>
-          <legend className="sr-only">Categories</legend>
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((c) => {
-              const on = categories.includes(c.value);
-              return (
-                <button
-                  key={c.value}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => toggleCategory(c.value)}
-                  className={`h-11 rounded-full px-4 text-sm font-semibold transition-colors ${on ? "bg-primary text-primary-foreground" : "bg-secondary hover:bg-accent"}`}
-                >
-                  {c.label}
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
-        {step === "services" && categories.length > 0 && (
-          <fieldset className="flex flex-col gap-3">
-            <legend className="mb-3 text-sm font-semibold">
-              Price range for each service
-            </legend>
-            {categories.map((c) => {
-              const p = priceFor(c);
-              const label = categoryLabel(c);
-              return (
-                <div
-                  key={c}
-                  className="flex flex-col gap-2 rounded-2xl bg-secondary/60 p-3"
-                >
-                  <span className="text-sm font-semibold">{label}</span>
-                  <div className="grid grid-cols-[5.5rem_1fr_1fr] gap-2">
-                    <SelectField
-                      aria-label={`${label} currency`}
-                      value={p.currency}
-                      onChange={(e) =>
-                        setPrice(c, { currency: e.target.value as Currency })
-                      }
-                      className="h-12 px-3 pr-8"
-                    >
-                      {CURRENCIES.map((cur) => (
-                        <option key={cur}>{cur}</option>
-                      ))}
-                    </SelectField>
-                    <PrefixInput
-                      aria-label={`${label} minimum price`}
-                      prefix="Min"
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      step={1}
-
-                      value={p.min}
-                      onChange={(e) => setPrice(c, { min: e.target.value })}
-                      className="tabular-nums"
-                    />
-                    <PrefixInput
-                      aria-label={`${label} maximum price`}
-                      prefix="Max"
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      step={1}
-
-                      value={p.max}
-                      onChange={(e) => setPrice(c, { max: e.target.value })}
-                      className="tabular-nums"
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </fieldset>
-        )}
+        <ServicesFields
+          categories={categories}
+          onCategories={setCategories}
+          {...(step === "services" && { prices, onPrices: setPrices })}
+        />
       </>,
       step === "services"
         ? "Pick the services clients can commission from you."

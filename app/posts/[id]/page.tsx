@@ -98,11 +98,19 @@ async function Post({ params }: { params: Promise<{ id: string }> }) {
 
         <div className="flex flex-wrap items-center gap-2">
           {isOwn ? (
+            <>
+            <Link
+              href={`/posts/${post.id}/edit`}
+              className={`${pillClass} flex-1 bg-foreground text-background hover:bg-foreground/90`}
+            >
+              Edit post
+            </Link>
             <DeletePostButton
               postId={post.id}
               imagePaths={imagePaths}
               className={`${pillClass} border border-input text-destructive hover:bg-secondary`}
             />
+            </>
           ) : (
             <>
               <Link
