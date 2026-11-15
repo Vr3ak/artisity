@@ -27,6 +27,7 @@ import { ImagePlus } from "lucide-react";
 import {
   ContactFields,
   EMPTY_CONTACTS,
+  type Contacts,
   IMAGE_TYPES,
   ImageTile,
   ImagesEditor,
@@ -48,6 +49,9 @@ type Step =
   | "contacts";
 
 const MAX_PORTFOLIO = 12;
+// Steps that can be skipped and filled in later from /profile/edit or /posts/new. The look card
+// (display name, username) and an artist's services are what a profile needs to work, so they stay required.
+const OPTIONAL: Step[] = ["details", "interests", "portfolio", "contacts"];
 
 // Onboarding after vgen.co: one question per card, back chevron + counter, "All done!" commits.
 // Everything is written at the end; role goes last because a set role marks onboarding done.
@@ -117,7 +121,24 @@ export function OnboardingForm({
   const next = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+    const skipping = (e.nativeEvent as SubmitEvent).submitter?.dataset.skip === "true";
     try {
+      if (skipping) {
+        // Skipping drops whatever was entered on this card, so nothing half-filled gets saved
+        if (step === "details") {
+          setBio("");
+          setLocation("");
+          setBusinessName("");
+          setBusinessType("");
+        }
+        if (step === "interests") setCategories([]);
+        if (step === "portfolio") setPortfolio([]);
+        if (step === "contacts") {
+          setContacts(EMPTY_CONTACTS);
+          return await finish(EMPTY_CONTACTS);
+        }
+        return goTo(stepIndex + 1);
+      }
       if (step === "look") {
         if (!name.trim()) throw new Error("Add a display name.");
         if (!usernameSaved) {
@@ -138,24 +159,11 @@ export function OnboardingForm({
           setUsernameSaved(true);
         }
       }
-      if (step === "details") {
-        if (!location) throw new Error("Choose your province.");
-        if (!isArtist && !businessType)
-          throw new Error("Choose what best describes you.");
+      if (step === "services") {
+        if (!categories.length) throw new Error("Pick at least one service.");
+        buildServices();
       }
-      if (
-        (step === "services" || step === "interests") &&
-        categories.length === 0
-      )
-        throw new Error(
-          isArtist
-            ? "Pick at least one service."
-            : "Pick at least one category.",
-        );
-      if (step === "services") buildServices();
-      if (step === "portfolio" && portfolio.length === 0)
-        throw new Error("Add at least one image of your work.");
-      if (step === "contacts") return await finish();
+      if (step === "contacts") return await finish(contacts);
       goTo(stepIndex + 1);
     } catch (err: unknown) {
       setBusy(false);
@@ -163,10 +171,10 @@ export function OnboardingForm({
     }
   };
 
-  const finish = async () => {
+  const finish = async (finalContacts: Contacts) => {
+    const contactValues = contactRow(finalContacts);
     const supabase = createClient();
     setBusy(true);
-    const contactValues = contactRow(contacts);
     let portfolioPosts: object[] = [];
     if (isArtist) {
       const services = buildServices();
@@ -204,7 +212,7 @@ export function OnboardingForm({
       .update({
         display_name: name.trim(),
         bio: bio.trim() || null,
-        location,
+        location: location || null,
         categories,
         ...(avatar && {
           avatar_url: await uploadImage(supabase, `${userId}/avatar`, avatar, 800),
@@ -214,7 +222,7 @@ export function OnboardingForm({
           : coverRemoved && { cover_url: null }),
         ...(!isArtist && {
           business_name: businessName.trim() || null,
-          business_type: businessType,
+          business_type: businessType || null,
         }),
         role: isArtist ? "artist" : "client",
       })
@@ -233,6 +241,7 @@ export function OnboardingForm({
   };
 
   const isLast = step === "contacts";
+  const optional = OPTIONAL.includes(step);
   const card = (
     title: React.ReactNode,
     body: React.ReactNode,
@@ -256,6 +265,16 @@ export function OnboardingForm({
         >
           {busy ? "Saving…" : isLast ? "All done!" : "Next"}
         </button>
+        {optional && (
+          <button
+            type="submit"
+            data-skip="true"
+            disabled={busy}
+            className="-mt-2 self-center rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground disabled:opacity-50"
+          >
+            {isLast ? "Skip and finish" : "Skip for now"}
+          </button>
+        )}
       </form>
     </FlowCard>
   );
@@ -374,6 +393,7 @@ export function OnboardingForm({
           </>
         )}
       </>,
+      "Optional. You can fill this in later from your profile.",
     );
 
   if (step === "services" || step === "interests")
@@ -388,7 +408,7 @@ export function OnboardingForm({
       </>,
       step === "services"
         ? "Pick the services clients can commission from you."
-        : "We'll use this to show you the right artists.",
+        : "Optional. We'll use this to show you the right artists.",
     );
 
   if (step === "portfolio")
@@ -424,7 +444,7 @@ export function OnboardingForm({
           </li>
         )}
       </ul>,
-      `Upload 1–${MAX_PORTFOLIO} pieces. They appear on your profile and in the home feed.`,
+      `Up to ${MAX_PORTFOLIO} pieces. They appear on your profile and in the home feed. Optional: you can post later.`,
     );
 
   return card(
