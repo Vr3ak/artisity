@@ -12,7 +12,11 @@ import { CARD_POST_COLUMNS, PostCard, postCard } from "@/components/post-card";
 async function Posts() {
   const supabase = await createClient();
   const [{ data: posts, error }, { data: claims }] = await Promise.all([
-    supabase.from("posts").select(CARD_POST_COLUMNS).order("created_at", { ascending: false }).limit(48),
+    supabase
+      .from("posts")
+      .select(CARD_POST_COLUMNS)
+      .order("created_at", { ascending: false })
+      .limit(48),
     supabase.auth.getClaims(),
   ]);
   if (error) throw error;
@@ -23,7 +27,13 @@ async function Posts() {
 
   const viewerId = claims?.claims?.sub;
   const { data: likes, error: likesError } = viewerId
-    ? await supabase.from("post_likes").select("post_id").in("post_id", posts.map((p) => p.id))
+    ? await supabase
+        .from("post_likes")
+        .select("post_id")
+        .in(
+          "post_id",
+          posts.map((p) => p.id)
+        )
     : { data: [], error: null };
   if (likesError) throw likesError;
   const liked = new Set(likes.map((l) => l.post_id));
@@ -31,7 +41,12 @@ async function Posts() {
   return (
     <Masonry>
       {feed.map((card) => (
-        <PostCard key={card.postId} card={card} liked={liked.has(card.postId)} viewerId={viewerId} />
+        <PostCard
+          key={card.postId}
+          card={card}
+          liked={liked.has(card.postId)}
+          viewerId={viewerId}
+        />
       ))}
     </Masonry>
   );
@@ -58,13 +73,18 @@ export default function Home() {
             Embrace HUMAN Creativity
           </h1>
           {/* NavSearch (components/nav-search.tsx) docks a compact copy into the nav once this scrolls away */}
-          <form id="home-search" action="/artists" role="search" className="relative w-full">
+          <form
+            id="home-search"
+            action="/artists"
+            role="search"
+            className="relative w-full"
+          >
             <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
               name="q"
-              placeholder="Search for artist or tag"
-              aria-label="Search for artist or tag"
+              placeholder="Search artists by name"
+              aria-label="Search artists by name"
               className="h-12 rounded-full pl-12 text-base"
             />
           </form>

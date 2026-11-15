@@ -50,7 +50,7 @@ export function ReviewForm({
   };
 
   return (
-    <form onSubmit={submit} noValidate className="flex flex-col gap-3 border-t pt-4">
+    <form onSubmit={submit} noValidate className="flex flex-col gap-3 border-t pt-5">
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 font-semibold">
           {review ? "Your review" : "How was working with this artist?"}

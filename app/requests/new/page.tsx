@@ -47,7 +47,7 @@ export default function Page({
   searchParams: Promise<{ artist?: string; category?: string }>;
 }) {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-col gap-8 p-5">
+    <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6 md:py-10">
       <Suspense fallback={<Loading />}>
         <NewRequest searchParams={searchParams} />
       </Suspense>

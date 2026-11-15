@@ -252,34 +252,40 @@ export function ProfileView({
             ))}
           </nav>
 
-          {tab === "commissions" && isOwn && isArtist && (
-            <Link
-              href="/profile/edit#services"
-              className={`${pillClass} w-fit self-end border border-input hover:bg-secondary`}
-            >
-              Edit services
-            </Link>
-          )}
           {tab === "commissions" ? (
             services.length === 0 ? (
-              <p className="py-10 text-center text-muted-foreground">
-                {isOwn ? "You haven't listed any services yet." : `${name} hasn't listed any services yet.`}
-              </p>
+              <div className="flex flex-col items-center gap-4 py-10 text-center text-muted-foreground">
+                <p>{isOwn ? "You haven't listed any services yet." : `${name} hasn't listed any services yet.`}</p>
+                {isOwn && (
+                  <Link href="/profile/edit#services" className={`${pillClass} bg-foreground text-background hover:bg-foreground/90`}>
+                    <Plus className="size-4" />
+                    Add services
+                  </Link>
+                )}
+              </div>
             ) : (
               <>
-                {services.length > 1 && (
-                  <ul className="flex flex-wrap gap-2">
-                    {services.map((s) => (
-                      <li key={s.category}>
+                {(services.length > 1 || isOwn) && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {services.length > 1 &&
+                      services.map((s) => (
                         <a
+                          key={s.category}
                           href={`#${s.category}`}
                           className="inline-flex h-9 items-center rounded-full border px-4 text-sm font-semibold hover:bg-secondary"
                         >
                           {categoryLabel(s.category)}
                         </a>
-                      </li>
-                    ))}
-                  </ul>
+                      ))}
+                    {isOwn && (
+                      <Link
+                        href="/profile/edit#services"
+                        className="ml-auto inline-flex h-9 items-center rounded-full bg-secondary px-4 text-sm font-semibold hover:bg-accent"
+                      >
+                        Edit services
+                      </Link>
+                    )}
+                  </div>
                 )}
                 <ul className="flex flex-col gap-4">
                   {services.map((s) => (
