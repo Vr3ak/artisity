@@ -1,14 +1,13 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { profileImageUrl, timeAgo } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { CategoryChips } from "@/components/category-chips";
 import { SiteFooter } from "@/components/site-footer";
 import { Loading } from "@/components/loading";
 import { Masonry } from "@/components/masonry";
+import { BannerCarousel, type BannerSlide } from "@/components/banner-carousel";
 import { CARD_POST_COLUMNS, PostCard, postCard } from "@/components/post-card";
-import { PostHero } from "@/components/post-hero";
 
 async function Posts() {
   const supabase = await createClient();
@@ -38,48 +37,21 @@ async function Posts() {
   );
 }
 
-// Featured posts in the hero: the most liked, newest first on ties (so with no likes yet it's simply
-// the newest). No like_count > 0 filter: the hero must not pop in or out when someone likes a card.
-// !inner drops posts whose artist RLS hides before the limit, so they can't eat hero slots.
-// ponytail: all-time likes, so early hits stay up top; count recent likes if the hero goes stale
-async function Hero() {
-  const supabase = await createClient();
-  const { data: posts, error } = await supabase
-    .from("posts")
-    .select("id, title, image_path, created_at, artist:profiles!posts_artist_id_fkey!inner(display_name, avatar_url)")
-    .order("like_count", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(8);
-  if (error) throw error;
-
-  const slides = posts.map((p) => {
-    const artist = p.artist as unknown as { display_name: string | null; avatar_url: string | null };
-    return {
-      id: p.id as string,
-      image: profileImageUrl(p.image_path),
-      title: p.title as string,
-      artist: artist.display_name,
-      avatar: artist.avatar_url,
-      ago: timeAgo(p.created_at),
-    };
-  });
-  return slides.length > 0 && <PostHero slides={slides} />;
-}
-
-function HeroSkeleton() {
-  return (
-    <div className="pt-2 [container-type:inline-size]">
-      <div className="mx-auto aspect-[16/10] w-[min(88cqw,78rem)] animate-pulse rounded-3xl bg-muted motion-reduce:animate-none sm:aspect-[21/9] lg:aspect-[3/1]" />
-    </div>
-  );
-}
+// Hero banners, in order; images live in public/. Placeholders hold the slots until more events come in.
+const BANNERS: BannerSlide[] = [
+  {
+    id: "phsar-art-26",
+    image: "/phsar-art.jpeg",
+    alt: "Phsar Art ’26, 7th edition: Moving with friends! 14–15 November at Stable TK, Saturday and Sunday 10:00–6:00, free entry. Supported by NagaWorld, curated by Nowhere Art Studio.",
+  },
+  { id: "placeholder-1", alt: "More events coming soon" },
+  { id: "placeholder-2", alt: "More events coming soon" },
+];
 
 export default function Home() {
   return (
     <>
-      <Suspense fallback={<HeroSkeleton />}>
-        <Hero />
-      </Suspense>
+      <BannerCarousel slides={BANNERS} />
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 p-4">
         <section className="flex flex-col gap-6 pt-6">
           <h1 className="text-left text-3xl font-bold tracking-tight sm:text-5xl">
