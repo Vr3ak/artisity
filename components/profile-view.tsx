@@ -12,6 +12,7 @@ import { contactLinks, formatPrice, postImagePaths, profileImageUrl } from "@/li
 import { ImageCarousel } from "@/components/image-carousel";
 import { MessageButton } from "@/components/message-button";
 import { SafetyMenu } from "@/components/safety-menu";
+import { RatingSummary, Stars } from "@/components/stars";
 
 export type Service = {
   category: string;
@@ -19,9 +20,13 @@ export type Service = {
   price_min: number;
   price_max: number;
 };
-export type ProfileTab = "commissions" | "portfolio";
+export type ProfileTab = "commissions" | "portfolio" | "reviews";
 export const parseTab = (tab?: string): ProfileTab =>
-  tab === "portfolio" ? "portfolio" : "commissions";
+  tab === "portfolio" || tab === "reviews" ? tab : "commissions";
+
+// Reviewers stay anonymous: client profiles are private
+export const PROFILE_REVIEW_COLUMNS = "reviews!reviews_artist_id_fkey(id, rating, comment, category, created_at)";
+type ProfileReview = { id: string; rating: number; comment: string; category: string; created_at: string };
 
 export type ProfileData = {
   id: string;
@@ -39,6 +44,8 @@ export type ProfileData = {
   services: Service[];
   // Newest first; only artists have posts
   posts?: { id: string; title: string; image_path: string; image_count: number }[];
+  // Newest first; only artists get reviews
+  reviews?: ProfileReview[];
 };
 
 const pillClass =
@@ -67,6 +74,7 @@ export function ProfileView({
   const name = artist.display_name ?? "Unnamed";
   const { services } = artist;
   const posts = artist.posts ?? [];
+  const reviews = artist.reviews ?? [];
   const links = contactLinks(artist.contact_methods ?? null);
   const isOwn = viewerId === id;
   const isArtist = artist.role === "artist";
@@ -101,6 +109,11 @@ export function ProfileView({
             <h1 className="text-3xl font-bold leading-tight tracking-tight">{name}</h1>
             {artist.username && (
               <p className="text-sm text-muted-foreground">@{artist.username}</p>
+            )}
+            {isArtist && (
+              <Link href="?tab=reviews" scroll={false} className="mt-1 w-fit text-sm hover:underline">
+                <RatingSummary reviews={reviews} />
+              </Link>
             )}
             {artist.location && (
               <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -217,6 +230,7 @@ export function ProfileView({
               [
                 ["commissions", "Commissions", services.length],
                 ["portfolio", "Portfolio", posts.length],
+                ["reviews", "Reviews", reviews.length],
               ] as const
             ).map(([value, label, count]) => (
               <Link
@@ -290,6 +304,33 @@ export function ProfileView({
                           Request
                         </Link>
                       )}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )
+          ) : tab === "reviews" ? (
+            reviews.length === 0 ? (
+              <p className="py-10 text-center text-muted-foreground">
+                {isOwn
+                  ? "No reviews yet. Clients can rate you once they mark a commission complete."
+                  : `${name} has no reviews yet.`}
+              </p>
+            ) : (
+              <>
+                <RatingSummary reviews={reviews} className="text-lg" />
+                <ul className="flex flex-col gap-3">
+                  {reviews.map((r) => (
+                    <li key={r.id} className="flex flex-col gap-2 rounded-3xl bg-card p-5 sm:p-6">
+                      <p className="flex items-center gap-2">
+                        <Stars value={r.rating} className="text-lg" />
+                        <span className="sr-only">{r.rating} out of 5</span>
+                      </p>
+                      {r.comment && <p className="whitespace-pre-line leading-relaxed">{r.comment}</p>}
+                      <p className="text-sm text-muted-foreground">
+                        Verified client · {categoryLabel(r.category)} ·{" "}
+                        {new Date(r.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })}
+                      </p>
                     </li>
                   ))}
                 </ul>

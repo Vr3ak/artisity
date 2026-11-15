@@ -6,6 +6,7 @@ import { formatPrice, profileHref } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { CategoryChips } from "@/components/category-chips";
 import { Loading } from "@/components/loading";
+import { RatingSummary } from "@/components/stars";
 
 type Service = { price_min: number; currency: string };
 
@@ -18,7 +19,7 @@ async function ArtistGrid({
   const supabase = await createClient();
   let query = supabase
     .from("profiles")
-    .select("id, username, display_name, avatar_url, location, categories, services(price_min, currency)")
+    .select("id, username, display_name, avatar_url, location, categories, services(price_min, currency), reviews!reviews_artist_id_fkey(rating)")
     .eq("role", "artist")
     .order("created_at", { ascending: false });
   // ponytail: no pagination; add .range() once there are more than a few hundred artists
@@ -63,6 +64,8 @@ async function ArtistGrid({
                     <div>
                       <p className="font-medium">{a.display_name}</p>
                       <p className="text-sm text-muted-foreground">{a.location}</p>
+                      {/* ponytail: averages every review in JS; move to a stored or SQL aggregate at a few thousand reviews */}
+                      <RatingSummary reviews={a.reviews as { rating: number }[]} className="text-sm" />
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1">

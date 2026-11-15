@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { RealtimeChat } from "@/components/realtime-chat";
 import { RequestActions } from "@/components/request-actions";
 import { Loading } from "@/components/loading";
+import { ReviewForm } from "@/components/review-form";
+import { Stars } from "@/components/stars";
 
 async function Request({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -39,6 +41,10 @@ async function Request({ params }: { params: Promise<{ id: string }> }) {
     .eq("user_id", side === "artist" ? request.client_id : request.artist_id)
     .maybeSingle();
   const links = contactLinks(contact);
+  const { data: review } =
+    request.status === "completed"
+      ? await supabase.from("reviews").select("id, rating, comment").eq("request_id", request.id).maybeSingle()
+      : { data: null };
 
   // The request form opens this thread; it may have been started from either side
   const conversationId = await findConversation(
@@ -103,6 +109,26 @@ async function Request({ params }: { params: Promise<{ id: string }> }) {
           status={request.status}
           side={side}
         />
+        {request.status === "completed" &&
+          (side === "client" ? (
+            <ReviewForm
+              requestId={request.id}
+              artistId={request.artist_id}
+              category={request.category}
+              review={review}
+            />
+          ) : (
+            review && (
+              <div className="flex flex-col gap-1 border-t pt-4">
+                <p className="flex items-center gap-2 font-semibold">
+                  Client&apos;s review
+                  <Stars value={review.rating} />
+                  <span className="sr-only">{review.rating} out of 5</span>
+                </p>
+                {review.comment && <p className="whitespace-pre-line text-sm">{review.comment}</p>}
+              </div>
+            )
+          ))}
       </div>
 
       {chat && conversationId && (
