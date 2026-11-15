@@ -120,3 +120,9 @@ export function masonryLayout(keys: string[], n: number, heights: Record<string,
   });
   return cols;
 }
+
+// Average star rating rounded to one decimal; null when there are no reviews
+export function averageRating(reviews: { rating: number }[]) {
+  if (!reviews.length) return null;
+  return Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) * 10) / 10;
+}
