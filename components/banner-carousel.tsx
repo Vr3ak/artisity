@@ -1,23 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type HeroSlide = {
-  id: string;
-  image: string;
-  title: string;
-  artist: string | null;
-  avatar: string | null;
-  ago: string;
-};
+// A banner image with its text spelled out in `alt`; no image renders an empty placeholder box
+export type BannerSlide = { id: string; image?: string; alt: string };
 
-export function PostHero({ slides: initial }: { slides: HeroSlide[] }) {
-  // Frozen at mount: a like calls router.refresh(), which can reorder the ranking, and the carousel
-  // shouldn't swap slides under the viewer. A fresh visit gets the new order.
-  const [slides] = useState(initial);
+// Home hero: rotating event banners, centred with the neighbours peeking in
+export function BannerCarousel({ slides }: { slides: BannerSlide[] }) {
   const track = useRef<HTMLUListElement>(null);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -50,7 +41,7 @@ export function PostHero({ slides: initial }: { slides: HeroSlide[] }) {
   return (
     <section
       aria-roledescription="carousel"
-      aria-label="Newest posts"
+      aria-label="Events"
       className="flex flex-col gap-4 pt-2 [container-type:inline-size]"
       onMouseEnter={() => setHold(true)}
       onMouseLeave={() => setHold(false)}
@@ -69,35 +60,24 @@ export function PostHero({ slides: initial }: { slides: HeroSlide[] }) {
             aria-label={`${i + 1} of ${slides.length}`}
             className="w-[min(88cqw,78rem)] shrink-0 snap-center"
           >
-            <Link
-              href={`/posts/${s.id}`}
+            <div
               className={cn(
-                "group relative block aspect-[16/10] overflow-hidden rounded-3xl bg-muted outline-none transition-opacity duration-500 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background motion-reduce:transition-none sm:aspect-[21/9] lg:aspect-[3/1]",
+                "aspect-[1024/378] overflow-hidden rounded-3xl bg-muted transition-opacity duration-500 ease-out motion-reduce:transition-none",
                 i !== index && "opacity-40",
               )}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={s.image}
-                alt=""
-                loading={i < 2 ? "eager" : "lazy"}
-                className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02] motion-reduce:transition-none"
-              />
-              <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 bg-gradient-to-t from-nav/95 via-nav/60 to-transparent p-4 pt-16 sm:gap-2 sm:p-6 sm:pt-20 lg:p-8">
-                <p className="line-clamp-2 max-w-3xl text-balance text-lg font-bold tracking-tight sm:text-2xl lg:text-3xl">
-                  {s.title}
-                </p>
-                <p className="flex min-w-0 items-center gap-2 text-sm">
-                  <span className="size-6 shrink-0 overflow-hidden rounded-full bg-secondary sm:size-7">
-                    {s.avatar && (
-                      <img src={s.avatar} alt="" referrerPolicy="no-referrer" className="size-full object-cover" />
-                    )}
-                  </span>
-                  <span className="truncate font-semibold">{s.artist}</span>
-                  <span className="shrink-0 text-muted-foreground">· {s.ago}</span>
-                </p>
-              </div>
-            </Link>
+              {s.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={s.image}
+                  alt={s.alt}
+                  loading={i < 2 ? "eager" : "lazy"}
+                  className="size-full object-cover"
+                />
+              ) : (
+                <span className="sr-only">{s.alt}</span>
+              )}
+            </div>
           </li>
         ))}
       </ul>
@@ -110,7 +90,7 @@ export function PostHero({ slides: initial }: { slides: HeroSlide[] }) {
                 key={s.id}
                 type="button"
                 onClick={() => go(i)}
-                aria-label={`Show post ${i + 1}`}
+                aria-label={`Show banner ${i + 1}`}
                 aria-current={i === index}
                 className="flex h-6 items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
@@ -133,10 +113,10 @@ export function PostHero({ slides: initial }: { slides: HeroSlide[] }) {
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => go(index - 1)} aria-label="Previous post" className={cn(control, "hidden sm:flex")}>
+            <button type="button" onClick={() => go(index - 1)} aria-label="Previous banner" className={cn(control, "hidden sm:flex")}>
               <ChevronLeft className="size-5" />
             </button>
-            <button type="button" onClick={() => go(index + 1)} aria-label="Next post" className={cn(control, "hidden sm:flex")}>
+            <button type="button" onClick={() => go(index + 1)} aria-label="Next banner" className={cn(control, "hidden sm:flex")}>
               <ChevronRight className="size-5" />
             </button>
           </div>
