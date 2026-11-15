@@ -38,7 +38,7 @@ export default function AboutPage() {
           <p className="text-lg leading-relaxed text-muted-foreground">
             To protect Cambodian creative employment, revive authentic human visual storytelling, and
             build a trusted bridge between local talent and businesses, so that the next generation of
-            designers, animators and musicians can turn their passion into a sustainable career.
+            designers and animators can turn their passion into a sustainable career.
           </p>
         </section>
 
@@ -47,8 +47,8 @@ export default function AboutPage() {
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Our mission</h2>
           <p className="text-lg leading-relaxed text-muted-foreground">
             To provide a safe, localized digital marketplace and collaborative workspace tailored to
-            Cambodia that empowers artists with transparent pricing, guaranteed protected payments and
-            fast, filtered discovery, connecting businesses with real human creativity instead of AI.
+            Cambodia that empowers artists with transparent pricing and fast,
+            filtered discovery, connecting businesses with real human creativity instead of AI.
           </p>
         </section>
       </main>
