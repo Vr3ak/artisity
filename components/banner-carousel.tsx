@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// A banner image with its text spelled out in `alt`; no image renders an empty placeholder box
-export type BannerSlide = { id: string; image?: string; alt: string };
+// A file in public/banners/ with the poster's text spelled out in `alt`
+export type BannerSlide = { image: string; alt: string };
 
 // Home hero: rotating event banners, centred with the neighbours peeking in
 export function BannerCarousel({ slides }: { slides: BannerSlide[] }) {
@@ -55,7 +55,7 @@ export function BannerCarousel({ slides }: { slides: BannerSlide[] }) {
       >
         {slides.map((s, i) => (
           <li
-            key={s.id}
+            key={s.image}
             aria-roledescription="slide"
             aria-label={`${i + 1} of ${slides.length}`}
             className="w-[min(88cqw,78rem)] shrink-0 snap-center"
@@ -66,17 +66,13 @@ export function BannerCarousel({ slides }: { slides: BannerSlide[] }) {
                 i !== index && "opacity-40",
               )}
             >
-              {s.image ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={s.image}
-                  alt={s.alt}
-                  loading={i < 2 ? "eager" : "lazy"}
-                  className="size-full object-cover"
-                />
-              ) : (
-                <span className="sr-only">{s.alt}</span>
-              )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/banners/${s.image}`}
+                alt={s.alt}
+                loading={i < 2 ? "eager" : "lazy"}
+                className="size-full object-cover"
+              />
             </div>
           </li>
         ))}
@@ -87,7 +83,7 @@ export function BannerCarousel({ slides }: { slides: BannerSlide[] }) {
           <div className="flex items-center gap-1.5">
             {slides.map((s, i) => (
               <button
-                key={s.id}
+                key={s.image}
                 type="button"
                 onClick={() => go(i)}
                 aria-label={`Show banner ${i + 1}`}

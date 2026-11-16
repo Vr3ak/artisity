@@ -17,7 +17,7 @@ import { type Theme } from "@/lib/theme";
 import Link from "next/link";
 import { useState } from "react";
 
-const THEMES = [
+export const THEMES = [
   { value: "light", label: "Light", Icon: Sun },
   { value: "dark", label: "Dark", Icon: Moon },
   { value: "system", label: "System", Icon: Monitor },
@@ -90,6 +90,9 @@ export function NavMenu({
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href="/profile">Profile</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/settings">Settings</Link>
             </DropdownMenuItem>
             {!role && (
               <DropdownMenuItem asChild>

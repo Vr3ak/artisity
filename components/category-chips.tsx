@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Box,
   Brush,
+  ChevronLeft,
+  ChevronRight,
   Clapperboard,
   Feather,
   Gamepad2,
@@ -65,35 +67,59 @@ function Disc({ Icon, from, to, large }: { Icon: LucideIcon; from?: string; to?:
 
 // Category links to /artists: a colored disc plus plain text. One swipeable row on phones, wrapped from md up;
 // `bleed` lets the row run to the screen edge inside a padded container of that width; `large` is the home page's bigger set.
+// `row` never wraps (the home feed's docked bar) and adds behance.net-style ‹ › buttons for mouse users.
+// `feed` links filter the home feed's posts in place (`/?category=`) instead of opening /artists.
 export function CategoryChips({
   active,
   withAll = false,
   bleed = "-mx-4 px-4",
   large = false,
+  row = false,
+  feed = false,
 }: {
   active?: string;
   withAll?: boolean;
   bleed?: string;
   large?: boolean;
+  row?: boolean;
+  feed?: boolean;
 }) {
   const nav = useRef<HTMLElement>(null);
-  // On phones the row scrolls sideways; bring the selected chip into view
+  const [edge, setEdge] = useState({ start: true, end: true });
+  const measure = () => {
+    const el = nav.current;
+    if (el) setEdge({ start: el.scrollLeft <= 1, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 1 });
+  };
+  // On phones the row scrolls sideways; centre the selected chip in it. Only the row moves
+  // (scrollIntoView would also scroll the page to a copy that's off screen).
   useEffect(() => {
-    nav.current
-      ?.querySelector('[aria-current="page"]')
-      ?.scrollIntoView({ inline: "center", block: "nearest" });
+    const el = nav.current;
+    const chip = el?.querySelector('[aria-current="page"]');
+    if (!el || !chip) return;
+    const box = el.getBoundingClientRect();
+    const c = chip.getBoundingClientRect();
+    el.scrollTo({ left: el.scrollLeft + c.left - box.left - (box.width - c.width) / 2 });
   }, [active]);
+  useEffect(() => {
+    if (!row || !nav.current) return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(nav.current);
+    return () => observer.disconnect();
+  }, [row]);
+  const page = (dir: 1 | -1) => nav.current?.scrollBy({ left: dir * nav.current.clientWidth * 0.8, behavior: "smooth" });
 
   const items = [
     ...(withAll ? [{ value: undefined, label: "All", disc: { Icon: LayoutGrid } }] : []),
     ...CATEGORIES.map((c) => ({ value: c.value, label: c.label, disc: ICONS[c.value] })),
   ];
-  return (
+  const chips = (
     <nav
       ref={nav}
       aria-label="Categories"
+      onScroll={row ? measure : undefined}
       className={cn(
-        "flex overflow-x-auto py-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:px-0",
+        "flex overflow-x-auto py-1 [scrollbar-width:none]",
+        !row && "md:mx-0 md:flex-wrap md:px-0",
         large ? "gap-x-7 gap-y-4" : "gap-x-5 gap-y-3",
         bleed,
       )}
@@ -103,7 +129,8 @@ export function CategoryChips({
         return (
           <Link
             key={label}
-            href={value ? `/artists?category=${value}` : "/artists"}
+            href={(feed ? "/" : "/artists") + (value ? `?category=${value}` : "")}
+            scroll={!feed}
             aria-current={on ? "page" : undefined}
             className={cn(chipClass, large ? "gap-3 text-base font-semibold" : "gap-2.5 text-sm font-medium")}
           >
@@ -120,5 +147,28 @@ export function CategoryChips({
         );
       })}
     </nav>
+  );
+  if (!row) return chips;
+  // Touch screens swipe; the buttons are for mice, which can't scroll sideways
+  const arrow = "absolute inset-y-0 z-10 hidden items-center from-background from-60% to-transparent [@media(hover:hover)]:flex";
+  const button = "flex size-9 items-center justify-center rounded-full bg-secondary text-secondary-foreground shadow-float transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  return (
+    <div className="relative min-w-0">
+      {chips}
+      {!edge.start && (
+        <div className={cn(arrow, "left-0 bg-gradient-to-r pr-8")}>
+          <button type="button" aria-label="Scroll categories left" onClick={() => page(-1)} className={button}>
+            <ChevronLeft className="size-5" />
+          </button>
+        </div>
+      )}
+      {!edge.end && (
+        <div className={cn(arrow, "right-0 bg-gradient-to-l pl-8")}>
+          <button type="button" aria-label="Scroll categories right" onClick={() => page(1)} className={button}>
+            <ChevronRight className="size-5" />
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

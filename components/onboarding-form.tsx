@@ -7,12 +7,7 @@ import {
   toUsername,
   usernameError,
 } from "@/lib/utils";
-import {
-  BUSINESS_TYPES,
-  PROVINCES,
-  categoryLabel,
-  type Category,
-} from "@/lib/options";
+import { PROVINCES, categoryLabel, type Category } from "@/lib/options";
 import { FormError } from "@/components/auth-parts";
 import {
   Field,
@@ -32,33 +27,28 @@ import {
   ImageTile,
   ImagesEditor,
   ServicesFields,
-  buildServiceRows,
   contactRow,
   useObjectUrl,
-  type Prices,
 } from "@/components/profile-fields";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
-type Step =
-  | "look"
-  | "details"
-  | "services"
-  | "interests"
-  | "portfolio"
-  | "contacts";
+type Step = "look" | "details" | "services" | "portfolio" | "contacts";
 
 const MAX_PORTFOLIO = 12;
-// Steps that can be skipped and filled in later from /profile/edit or /posts/new. The look card
+// Steps that can be skipped and filled in later from /settings/profile or /posts/new. The look card
 // (display name, username) and an artist's services are what a profile needs to work, so they stay required.
-const OPTIONAL: Step[] = ["details", "interests", "portfolio", "contacts"];
+const OPTIONAL: Step[] = ["details", "portfolio", "contacts"];
 
 // Onboarding after vgen.co: one question per card, back chevron + counter, "All done!" commits.
 // Everything is written at the end; role goes last because a set role marks onboarding done.
+// Clients only get the look card (like Fiverr buyers and VGen guests, they're here to hire): bio,
+// business and social links wait in /settings/profile. Finishing goes to `next`, where they were headed.
 export function OnboardingForm({
   userId,
   initial,
   initialRole,
+  next: nextPath,
 }: {
   userId: string;
   initial: {
@@ -68,6 +58,7 @@ export function OnboardingForm({
     cover_url: string | null;
   };
   initialRole: "client" | "artist";
+  next?: string;
 }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [isArtist, setIsArtist] = useState(initialRole === "artist");
@@ -83,11 +74,8 @@ export function OnboardingForm({
   // details
   const [bio, setBio] = useState("");
   const [location, setLocation] = useState("");
-  const [businessName, setBusinessName] = useState("");
-  const [businessType, setBusinessType] = useState("");
-  // services / interests
+  // services
   const [categories, setCategories] = useState<Category[]>([]);
-  const [prices, setPrices] = useState<Prices>({});
   // portfolio
   const [portfolio, setPortfolio] = useState<File[]>([]);
   // socials + contacts
@@ -103,10 +91,9 @@ export function OnboardingForm({
   const avatarSrc = avatarPreview ?? initial.avatar_url;
   const coverSrc = coverPreview ?? (coverRemoved ? null : initial.cover_url);
 
-  const steps: Step[] = isArtist
-    ? ["look", "details", "services", "portfolio", "contacts"]
-    : ["look", "details", "interests", "contacts"];
+  const steps: Step[] = isArtist ? ["look", "details", "services", "portfolio", "contacts"] : ["look"];
   const step = steps[stepIndex];
+  const isLast = stepIndex === steps.length - 1;
 
   const goTo = (i: number) => {
     setError(null);
@@ -114,8 +101,6 @@ export function OnboardingForm({
     setTimeout(() => heading.current?.focus());
   };
   const back = stepIndex > 0 ? () => goTo(stepIndex - 1) : undefined;
-
-  const buildServices = () => buildServiceRows(userId, categories, prices);
 
   // Validates the current card, saving the username early so a taken one is caught on its own card
   const next = async (e: React.SubmitEvent<HTMLFormElement>) => {
@@ -128,10 +113,7 @@ export function OnboardingForm({
         if (step === "details") {
           setBio("");
           setLocation("");
-          setBusinessName("");
-          setBusinessType("");
         }
-        if (step === "interests") setCategories([]);
         if (step === "portfolio") setPortfolio([]);
         if (step === "contacts") {
           setContacts(EMPTY_CONTACTS);
@@ -161,9 +143,8 @@ export function OnboardingForm({
       }
       if (step === "services") {
         if (!categories.length) throw new Error("Pick at least one service.");
-        buildServices();
       }
-      if (step === "contacts") return await finish(contacts);
+      if (isLast) return await finish(contacts);
       goTo(stepIndex + 1);
     } catch (err: unknown) {
       setBusy(false);
@@ -177,7 +158,6 @@ export function OnboardingForm({
     setBusy(true);
     let portfolioPosts: object[] = [];
     if (isArtist) {
-      const services = buildServices();
       // Each portfolio image becomes a one-image post (titled after the first service), so it can be
       // liked and requested like any other. The ids come first because image_path must be
       // <uid>/posts/<id>; the rows go in after `role`, since only artists can post.
@@ -190,21 +170,11 @@ export function OnboardingForm({
         }),
       );
       portfolioPosts = posts;
-      // Replace rather than upsert so a retry with fewer categories leaves no stale rows
-      const { error: delError } = await supabase
-        .from("services")
-        .delete()
-        .eq("artist_id", userId);
-      if (delError) throw delError;
-      const { error: svcError } = await supabase
-        .from("services")
-        .insert(services);
-      if (svcError) throw svcError;
+      const { error: contactError } = await supabase
+        .from("contact_methods")
+        .upsert({ user_id: userId, ...contactValues });
+      if (contactError) throw contactError;
     }
-    const { error: contactError } = await supabase
-      .from("contact_methods")
-      .upsert({ user_id: userId, ...contactValues });
-    if (contactError) throw contactError;
 
     // Setting role marks onboarding done, so this write goes last
     const { error } = await supabase
@@ -213,17 +183,14 @@ export function OnboardingForm({
         display_name: name.trim(),
         bio: bio.trim() || null,
         location: location || null,
-        categories,
+        // Picked services, unpriced: prices (services rows) are set later in /settings/profile
+        ...(isArtist && { categories }),
         ...(avatar && {
           avatar_url: await uploadImage(supabase, `${userId}/avatar`, avatar, 800),
         }),
         ...(cover
           ? { cover_url: await uploadImage(supabase, `${userId}/cover`, cover) }
           : coverRemoved && { cover_url: null }),
-        ...(!isArtist && {
-          business_name: businessName.trim() || null,
-          business_type: businessType || null,
-        }),
         role: isArtist ? "artist" : "client",
       })
       .eq("id", userId);
@@ -233,14 +200,12 @@ export function OnboardingForm({
       if (postsError) throw postsError;
     }
     router.push(
-      isArtist
-        ? profileHref({ id: userId, username: initial.username ?? username })
-        : "/artists",
+      nextPath ??
+        (isArtist ? profileHref({ id: userId, username: initial.username ?? username }) : "/artists"),
     );
     router.refresh();
   };
 
-  const isLast = step === "contacts";
   const optional = OPTIONAL.includes(step);
   const card = (
     title: React.ReactNode,
@@ -249,7 +214,8 @@ export function OnboardingForm({
   ) => (
     <FlowCard
       headingRef={heading}
-      step={stepIndex + 1}
+      // A one-card flow (clients) has no counter
+      step={steps.length > 1 ? stepIndex + 1 : undefined}
       total={steps.length}
       onBack={back}
       title={title}
@@ -363,52 +329,15 @@ export function OnboardingForm({
             </SelectField>
           )}
         </Field>
-        {!isArtist && (
-          <>
-            <Field label="What best describes you?">
-              {(id) => (
-                <SelectField
-                  id={id}
-                  value={businessType}
-                  onChange={(e) => setBusinessType(e.target.value)}
-                >
-                  <option value="">Select…</option>
-                  {BUSINESS_TYPES.map((t) => (
-                    <option key={t}>{t}</option>
-                  ))}
-                </SelectField>
-              )}
-            </Field>
-            <Field label="Business name (optional)">
-              {(id) => (
-                <input
-                  id={id}
-                  maxLength={100}
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                  className={fieldClass}
-                />
-              )}
-            </Field>
-          </>
-        )}
       </>,
       "Optional. You can fill this in later from your profile.",
     );
 
-  if (step === "services" || step === "interests")
+  if (step === "services")
     return card(
-      step === "services" ? "What do you offer?" : "What are you looking for?",
-      <>
-        <ServicesFields
-          categories={categories}
-          onCategories={setCategories}
-          {...(step === "services" && { prices, onPrices: setPrices })}
-        />
-      </>,
-      step === "services"
-        ? "Pick the services clients can commission from you."
-        : "Optional. We'll use this to show you the right artists.",
+      "What do you offer?",
+      <ServicesFields categories={categories} onCategories={setCategories} />,
+      "Pick what clients can commission from you. You can add prices later from your profile.",
     );
 
   if (step === "portfolio")
@@ -450,8 +379,6 @@ export function OnboardingForm({
   return card(
     "Social links",
     <ContactFields contacts={contacts} onChange={setContacts} />,
-    isArtist
-      ? "Optional. Shown on your profile so clients can reach you."
-      : "Optional. Only shared with people you have a commission request with.",
+    "Optional. Shown on your profile so clients can reach you.",
   );
 }

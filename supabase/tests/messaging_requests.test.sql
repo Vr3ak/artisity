@@ -1,7 +1,7 @@
 -- npx supabase test db --local
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(23);
+select plan(28);
 
 -- client (c), artist (a), outsider (o); the signup trigger creates their profiles
 insert into auth.users (id, email) values
@@ -57,6 +57,17 @@ select is((select count(*) from public.messages where body = 'hacked'), 0::bigin
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000c');
 select lives_ok($$ update public.messages set deleted_at = now() where body = 'hello' $$, 'sender deletes');
 select throws_ok($$ update public.messages set body = 'back' $$, '23514', null, 'deleted message is frozen');
+
+-- commission status: a closed artist can still be messaged but not sent requests
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
+select lives_ok($$ update public.profiles set commissions_open = false where id = '00000000-0000-0000-0000-00000000000a' $$, 'artist closes commissions');
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000c');
+select throws_ok($$ insert into public.requests (artist_id, category, brief) values ('00000000-0000-0000-0000-00000000000a', 'emote', 'closed?') $$, '42501', null, 'no requests while closed');
+select lives_ok($$ insert into public.messages (conversation_id, body) select id, 'still here?' from public.conversations $$, 'closed artist can still be messaged');
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
+select lives_ok($$ update public.profiles set commissions_open = true where id = '00000000-0000-0000-0000-00000000000a' $$, 'artist reopens');
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000c');
+select lives_ok($$ insert into public.requests (artist_id, category, brief) values ('00000000-0000-0000-0000-00000000000a', 'emote', 'open again') $$, 'requests allowed once reopened');
 
 select * from finish();
 rollback;

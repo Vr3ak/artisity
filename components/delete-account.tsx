@@ -8,7 +8,7 @@ import { useState } from "react";
 
 const CONFIRM_WORD = "DELETE";
 
-// Small "Delete account" link at the bottom of /profile/edit; the modal carries the warning.
+// The danger-zone button at the bottom of Settings › Account; the modal carries the warning.
 // The server route does the deleting.
 export function DeleteAccount() {
   const [open, setOpen] = useState(false);
@@ -42,7 +42,7 @@ export function DeleteAccount() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-sm text-muted-foreground underline-offset-4 hover:text-destructive hover:underline"
+        className="inline-flex h-11 items-center rounded-full border border-destructive/50 px-5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         Delete account
       </button>

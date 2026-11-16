@@ -222,10 +222,12 @@ export type Price = { currency: Currency; min: string; max: string };
 export type Prices = Partial<Record<Category, Price>>;
 const priceFor = (prices: Prices, c: Category): Price => prices[c] ?? { currency: "USD", min: "", max: "" };
 
-// services rows for the picked categories; throws a readable error on a bad price range
+// services rows for the picked categories that have a price; a category left blank stays unpriced
+// (no row; clients see "Ask for a quote"). Throws a readable error on a half-filled or bad range.
 export function buildServiceRows(artistId: string, categories: Category[], prices: Prices) {
-  return categories.map((c) => {
+  return categories.flatMap((c) => {
     const p = priceFor(prices, c);
+    if (p.min === "" && p.max === "") return [];
     const min = Number(p.min);
     const max = Number(p.max);
     if (p.min === "" || p.max === "" || min > max)
@@ -275,6 +277,9 @@ export function ServicesFields({
           <fieldset className="flex flex-col gap-3">
             <legend className="mb-3 text-sm font-semibold">
               Price range for each service
+              <span className="mt-1 block font-normal text-muted-foreground">
+                Leave one blank and clients ask you for a quote.
+              </span>
             </legend>
             {categories.map((c) => {
               const p = priceFor(prices, c);

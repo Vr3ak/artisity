@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { RequestForm } from "@/components/request-form";
 import { Loading } from "@/components/loading";
+import Link from "next/link";
+import { profileHref } from "@/lib/utils";
 
 async function NewRequest({
   searchParams,
@@ -18,7 +20,7 @@ async function NewRequest({
 
   const { data: artist, error } = await supabase
     .from("profiles")
-    .select("display_name, categories, services(category)")
+    .select("display_name, username, commissions_open, categories, services(category)")
     .eq("id", artistId)
     .eq("role", "artist")
     .maybeSingle();
@@ -26,9 +28,27 @@ async function NewRequest({
   if (error && error.code !== "22P02") throw error;
   if (!artist) notFound();
 
-  // Priced services first; fall back to the categories the artist lists
-  const services = (artist.services as { category: string }[]).map((s) => s.category);
-  const categories = services.length ? services : (artist.categories as string[]);
+  // Closed: say so up front (the requests insert policy would reject the send anyway)
+  if (!artist.commissions_open)
+    return (
+      <div className="flex flex-col items-center gap-4 rounded-3xl bg-card p-8 text-center sm:p-10">
+        <h1 className="text-2xl font-bold tracking-tight">
+          {artist.display_name ?? "This artist"} isn&apos;t taking commissions right now
+        </h1>
+        <p className="text-muted-foreground">You can still message them from their profile, or check back later.</p>
+        <Link
+          href={profileHref({ id: artistId, username: artist.username })}
+          className="inline-flex h-11 items-center rounded-full bg-foreground px-5 text-sm font-semibold text-background hover:bg-foreground/90"
+        >
+          Go to their profile
+        </Link>
+      </div>
+    );
+
+  // Every service the artist offers: priced ones (services rows) plus any picked without a price yet
+  const categories = [
+    ...new Set([...(artist.services as { category: string }[]).map((s) => s.category), ...(artist.categories as string[])]),
+  ];
 
   return (
     <RequestForm

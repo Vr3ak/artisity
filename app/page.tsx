@@ -5,25 +5,27 @@ import { Search } from "lucide-react";
 import { CategoryChips } from "@/components/category-chips";
 import { SiteFooter } from "@/components/site-footer";
 import { Loading } from "@/components/loading";
-import { Masonry } from "@/components/masonry";
 import { BannerCarousel, type BannerSlide } from "@/components/banner-carousel";
-import { CARD_POST_COLUMNS, PostCard, postCard } from "@/components/post-card";
+import { CARD_POST_COLUMNS, postCard } from "@/components/post-card";
+import { HomeFeed } from "@/components/home-feed";
+import { isCategory } from "@/lib/options";
 
-async function Posts() {
+type Search = Promise<{ category?: string }>;
+
+// Clicking a service filters the feed to posts tagged with it (`?category=`)
+async function Posts({ searchParams }: { searchParams: Search }) {
+  const { category: raw } = await searchParams;
+  const category = isCategory(raw) ? raw : undefined;
   const supabase = await createClient();
-  const [{ data: posts, error }, { data: claims }] = await Promise.all([
-    supabase
-      .from("posts")
-      .select(CARD_POST_COLUMNS)
-      .order("created_at", { ascending: false })
-      .limit(48),
-    supabase.auth.getClaims(),
-  ]);
+  let query = supabase
+    .from("posts")
+    .select(CARD_POST_COLUMNS)
+    .order("created_at", { ascending: false })
+    .limit(48);
+  if (category) query = query.eq("category", category);
+  const [{ data: posts, error }, { data: claims }] = await Promise.all([query, supabase.auth.getClaims()]);
   if (error) throw error;
   const feed = posts.flatMap((p) => postCard(p) ?? []);
-
-  if (feed.length === 0)
-    return <p className="text-muted-foreground">No posts yet.</p>;
 
   const viewerId = claims?.claims?.sub;
   const { data: likes, error: likesError } = viewerId
@@ -36,34 +38,35 @@ async function Posts() {
         )
     : { data: [], error: null };
   if (likesError) throw likesError;
-  const liked = new Set(likes.map((l) => l.post_id));
 
-  return (
-    <Masonry>
-      {feed.map((card) => (
-        <PostCard
-          key={card.postId}
-          card={card}
-          liked={liked.has(card.postId)}
-          viewerId={viewerId}
-        />
-      ))}
-    </Masonry>
-  );
+  return <HomeFeed cards={feed} liked={likes.map((l) => l.post_id)} viewerId={viewerId} category={category} />;
 }
 
-// Hero banners, in order; images live in public/. Placeholders hold the slots until more events come in.
+async function Services({ searchParams }: { searchParams: Search }) {
+  const { category } = await searchParams;
+  return <CategoryChips large feed withAll active={isCategory(category) ? category : undefined} />;
+}
+
 const BANNERS: BannerSlide[] = [
   {
-    id: "phsar-art-26",
-    image: "/phsar-art.jpeg",
+    image: "sea-differently.jpeg",
+    alt: "Sea Differently: an Asian lens on artistic freedom. Safe Havens Meeting, 2–4 December 2026, Siem Reap, Cambodia. Living Arts International and SHIFT.",
+  },
+  {
+    image: "phsar-art.jpeg",
     alt: "Phsar Art ’26, 7th edition: Moving with friends! 14–15 November at Stable TK, Saturday and Sunday 10:00–6:00, free entry. Supported by NagaWorld, curated by Nowhere Art Studio.",
   },
-  { id: "placeholder-1", alt: "More events coming soon" },
-  { id: "placeholder-2", alt: "More events coming soon" },
+  {
+    image: "art-and-artists.jpeg",
+    alt: "Art & Artists Collective Exhibition, hosted by Kramuon Gallery. 7–8 November 2026, 4–8 PM at Domlei House, #91, St. 110. Free entry. Sponsored by Co & Bloom Coffee and Domlei.",
+  },
+  {
+    image: "tonle-to-treeline.jpeg",
+    alt: "Tonlé to Treeline exhibition: Anya Minko, Ouk Chimvichet and Hom Rith. 19 March – 31 May 2026 at Rosewood Gallery, Floor 35, Rosewood Phnom Penh. Curated by Anya Minko.",
+  },
 ];
 
-export default function Home() {
+export default function Home({ searchParams }: { searchParams: Search }) {
   return (
     <>
       <BannerCarousel slides={BANNERS} />
@@ -88,17 +91,21 @@ export default function Home() {
               className="h-12 rounded-full pl-12 text-base"
             />
           </form>
-          <div className="flex flex-col gap-4 pt-4">
+          {/* HomeFeed docks a one-row copy of these into its sticky bar once this scrolls away */}
+          <div id="home-services" className="flex flex-col gap-4 pt-4">
             <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
               Commission services
             </h2>
-            <CategoryChips large />
+            <Suspense fallback={<CategoryChips large feed withAll />}>
+              <Services searchParams={searchParams} />
+            </Suspense>
           </div>
         </section>
 
-        <section className="flex flex-col gap-4">
+        {/* No gap: HomeFeed's sticky bar is the first child and brings its own height */}
+        <section className="flex flex-col">
           <Suspense fallback={<Loading />}>
-            <Posts />
+            <Posts searchParams={searchParams} />
           </Suspense>
         </section>
       </main>

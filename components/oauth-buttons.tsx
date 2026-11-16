@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils";
+import { carryNext, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/auth-parts";
 import { type Provider } from "@supabase/supabase-js";
@@ -97,7 +97,7 @@ function GoogleButton({
           return onError(error.message);
         }
         // Full load, like the redirect flow: the server-rendered header needs the new session
-        window.location.assign(next);
+        window.location.assign(carryNext(next, location.search));
       },
     });
     initialized.current = true;
@@ -197,7 +197,7 @@ export function OAuthButtons({
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(carryNext(next, location.search))}`,
       },
     });
     if (error) {

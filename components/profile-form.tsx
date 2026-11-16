@@ -9,10 +9,12 @@ import {
 } from "@/lib/utils";
 import { BUSINESS_TYPES, PROVINCES, type Category, type Currency } from "@/lib/options";
 import { FormError } from "@/components/auth-parts";
+import { Section } from "@/components/section";
 import {
   Field,
   PrefixInput,
   SelectField,
+  Switch,
   fieldClass,
   pillClass,
 } from "@/components/flow";
@@ -40,31 +42,11 @@ export type Profile = {
   role: string | null;
   business_name: string | null;
   business_type: string | null;
+  // Every picked service, priced or not (services rows hold only the priced ones)
+  categories: string[];
+  commissions_open: boolean;
 };
 
-function Section({
-  id,
-  title,
-  description,
-  children,
-}: {
-  id?: string;
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section id={id} className="flex scroll-mt-24 flex-col gap-6 rounded-3xl bg-nav p-6 sm:p-8">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
-        {description && (
-          <p className="text-sm text-muted-foreground">{description}</p>
-        )}
-      </div>
-      {children}
-    </section>
-  );
-}
 
 // Profile editor in the same cards as onboarding (after vgen.co), saved in one go from a sticky bar.
 export function ProfileForm({
@@ -80,7 +62,10 @@ export function ProfileForm({
 }) {
   const isClient = profile.role === "client";
   const isArtist = profile.role === "artist";
-  const [categories, setCategories] = useState(initialServices.map((s) => s.category as Category));
+  const [open, setOpen] = useState(profile.commissions_open);
+  const [categories, setCategories] = useState(() => [
+    ...new Set([...profile.categories, ...initialServices.map((s) => s.category)]),
+  ] as Category[]);
   const [prices, setPrices] = useState<Prices>(() =>
     Object.fromEntries(
       initialServices.map((s) => [
@@ -123,14 +108,16 @@ export function ProfileForm({
       const services = isArtist ? buildServiceRows(userId, categories, prices) : [];
 
       if (isArtist) {
-        // Upsert first, then drop the unpicked ones, so a failure never leaves the artist with none
-        const { error: upError } = await supabase.from("services").upsert(services);
-        if (upError) throw upError;
-        const { error: delError } = await supabase
-          .from("services")
-          .delete()
-          .eq("artist_id", userId)
-          .not("category", "in", `(${categories.join(",")})`);
+        // Upsert first, then drop rows for unpicked or now-unpriced services, so a failure never
+        // leaves the artist with none
+        const priced = services.map((s) => s.category);
+        if (priced.length) {
+          const { error: upError } = await supabase.from("services").upsert(services);
+          if (upError) throw upError;
+        }
+        let stale = supabase.from("services").delete().eq("artist_id", userId);
+        if (priced.length) stale = stale.not("category", "in", `(${priced.join(",")})`);
+        const { error: delError } = await stale;
         if (delError) throw delError;
       }
 
@@ -146,8 +133,8 @@ export function ProfileForm({
           username: username || null,
           bio: bio.trim() || null,
           location: location || null,
-          // profiles.categories mirrors the services for artists (the /artists list reads it)
-          ...(isArtist && { categories }),
+          // profiles.categories lists every picked service, priced or not (the /artists list reads it)
+          ...(isArtist && { categories, commissions_open: open }),
           ...(isClient && {
             business_name: businessName.trim() || null,
             business_type: businessType || null,
@@ -286,6 +273,12 @@ export function ProfileForm({
 
       {isArtist && (
         <Section id="services" title="Services" description="What clients can commission from you, and your price range for each.">
+          <div className="flex flex-col gap-1">
+            <Switch checked={open} onChange={setOpen} label="Open for commissions" />
+            <p className="text-sm text-muted-foreground">
+              When off, clients can still message you but can&apos;t send requests.
+            </p>
+          </div>
           <ServicesFields
             categories={categories}
             onCategories={setCategories}

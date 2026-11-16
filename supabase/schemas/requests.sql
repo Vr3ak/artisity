@@ -32,7 +32,7 @@ create policy "requests: insert own" on public.requests
   with check (
     (select auth.uid()) = client_id
     and status = 'pending'
-    and private.is_artist(artist_id)
+    and private.accepts_requests(artist_id)
     and not private.is_blocked(client_id, artist_id)
   );
 

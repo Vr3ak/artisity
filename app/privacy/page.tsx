@@ -85,7 +85,7 @@ export default function PrivacyPage() {
       <h2>How long we keep it</h2>
       <p>
         We keep your data while your account exists. You can delete your account at any time from{" "}
-        <Link href="/profile/edit">Edit profile</Link>. This permanently removes your profile, images,
+        <Link href="/settings/account">Settings › Account</Link>. This permanently removes your profile, images,
         services, contact handles, messages, files and requests. Conversations you were part of are
         removed for the other person too. Reports you sent are kept, without your name, so staff can
         finish reviewing them. Server logs and backups are cleared on our providers&apos; normal

@@ -15,6 +15,9 @@ export const CATEGORIES = [
 
 export type Category = (typeof CATEGORIES)[number]["value"];
 
+export const isCategory = (value: unknown): value is Category =>
+  CATEGORIES.some((c) => c.value === value);
+
 export const categoryLabel = (value: string) =>
   CATEGORIES.find((c) => c.value === value)?.label ?? value;
 
