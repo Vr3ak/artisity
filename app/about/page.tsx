@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SiteFooter } from "@/components/site-footer";
 
 export const metadata: Metadata = {
-  title: "About us · Artisity",
+  title: "About us",
   description:
     "Artisity connects local businesses with Cambodia's hidden creative talent and stands for authentic human creativity.",
 };

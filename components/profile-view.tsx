@@ -13,6 +13,7 @@ import { contactLinks, formatPrice, loginHref, postImagePaths, profileHref, prof
 import { ImageCarousel } from "@/components/image-carousel";
 import { MessageButton } from "@/components/message-button";
 import { SafetyMenu } from "@/components/safety-menu";
+import { ShareButton } from "@/components/share-button";
 import { RatingSummary, Stars } from "@/components/stars";
 
 export type Service = {
@@ -274,6 +275,10 @@ export function ProfileView({
                   <SafetyMenu userId={id} name={name} blocked={false} className={circleClass} />
                 )}
               </>
+            )}
+            {/* Client profiles are private, so only artist profiles have a link worth sharing */}
+            {isArtist && !blocked && (
+              <ShareButton title={name} path={profileHref({ id, username: artist.username })} className={circleClass} />
             )}
           </div>
 

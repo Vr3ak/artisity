@@ -3,7 +3,7 @@ import Link from "next/link";
 import { LegalPage } from "@/components/legal-page";
 
 export const metadata: Metadata = {
-  title: "Terms of Service · Artisity",
+  title: "Terms of Service",
   description: "The rules for using Artisity as a client or an artist.",
 };
 

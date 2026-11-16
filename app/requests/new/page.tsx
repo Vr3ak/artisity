@@ -1,10 +1,13 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { RequestForm } from "@/components/request-form";
+import { RequestForm, type PricedService } from "@/components/request-form";
 import { Loading } from "@/components/loading";
 import Link from "next/link";
 import { profileHref } from "@/lib/utils";
+
+export const metadata: Metadata = { title: "Request a commission" };
 
 async function NewRequest({
   searchParams,
@@ -20,7 +23,7 @@ async function NewRequest({
 
   const { data: artist, error } = await supabase
     .from("profiles")
-    .select("display_name, username, commissions_open, categories, services(category)")
+    .select("display_name, username, commissions_open, categories, services(category, price_min, price_max, currency)")
     .eq("id", artistId)
     .eq("role", "artist")
     .maybeSingle();
@@ -46,9 +49,8 @@ async function NewRequest({
     );
 
   // Every service the artist offers: priced ones (services rows) plus any picked without a price yet
-  const categories = [
-    ...new Set([...(artist.services as { category: string }[]).map((s) => s.category), ...(artist.categories as string[])]),
-  ];
+  const services = artist.services as PricedService[];
+  const categories = [...new Set([...services.map((s) => s.category), ...(artist.categories as string[])])];
 
   return (
     <RequestForm
@@ -56,6 +58,7 @@ async function NewRequest({
       artistId={artistId}
       artistName={artist.display_name ?? "The artist"}
       categories={categories}
+      services={services}
       initialCategory={category}
     />
   );

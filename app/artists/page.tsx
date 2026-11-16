@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
@@ -5,8 +6,10 @@ import { CATEGORIES, categoryLabel } from "@/lib/options";
 import { formatPrice, profileHref } from "@/lib/utils";
 import { MapPin } from "lucide-react";
 import { CategoryChips } from "@/components/category-chips";
-import { Loading } from "@/components/loading";
+import { ArtistGridSkeleton } from "@/components/skeletons";
 import { RatingSummary } from "@/components/stars";
+
+export const metadata: Metadata = { title: "Find an artist" };
 
 type Service = { price_min: number; currency: string };
 
@@ -30,8 +33,9 @@ async function ArtistGrid({
   if (CATEGORIES.some((c) => c.value === category)) {
     query = query.contains("categories", [category]);
   }
-  // ponytail: name substring match; full-text search over bio/categories when this gets used
-  if (q?.trim()) query = query.ilike("display_name", `%${q.trim()}%`);
+
+  const term = q?.trim().replace(/^@/, "").replace(/[,()]/g, " ").trim();
+  if (term) query = query.or(`display_name.ilike.%${term}%,username.ilike.%${term}%`);
   const { data: artists, error } = await query;
   if (error) throw error;
 
@@ -43,13 +47,24 @@ async function ArtistGrid({
         bleed="-mx-4 px-4"
       />
       {artists.length === 0 ? (
-        <p className="text-muted-foreground">
-          {q
-            ? `No artists match “${q}”.`
-            : category && CATEGORIES.some((c) => c.value === category)
-              ? `No artists offer ${categoryLabel(category)} yet.`
-              : "No artists yet."}
-        </p>
+        <div className="flex flex-col items-start gap-4 rounded-3xl bg-card p-6">
+          <p className="text-muted-foreground">
+            {q
+              ? `No artists match “${q}”. Try part of their name or @username.`
+              : category && CATEGORIES.some((c) => c.value === category)
+                ? `No artists offer ${categoryLabel(category)} yet.`
+                : "No artists yet."}
+          </p>
+          {(q || category) && (
+            <Link
+              // Clearing the search keeps the category, and vice versa
+              href={q && category ? `/artists?category=${category}` : "/artists"}
+              className="inline-flex h-10 items-center rounded-full bg-foreground px-5 text-sm font-semibold text-background hover:bg-foreground/90"
+            >
+              {q ? "Clear search" : "See all artists"}
+            </Link>
+          )}
+        </div>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {artists.map((a) => {
@@ -121,7 +136,7 @@ export default function Page({
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 md:py-10">
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Find an artist</h1>
-      <Suspense fallback={<Loading />}>
+      <Suspense fallback={<ArtistGridSkeleton />}>
         <ArtistGrid searchParams={searchParams} />
       </Suspense>
     </main>

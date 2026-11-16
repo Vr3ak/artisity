@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import Script from "next/script";
 import { Suspense } from "react";
-import { TopNav } from "@/components/top-nav";
+import { TopNav, TopNavSkeleton } from "@/components/top-nav";
 import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -10,8 +10,10 @@ const defaultUrl = process.env.SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Artisity",
-  description: "",
+  title: { default: "Artisity: commission Cambodian artists", template: "%s · Artisity" },
+  description:
+    "Discover Cambodian artists and commission original, human-made work: illustration, branding, emotes, game assets and more. Prices in USD or KHR.",
+  openGraph: { siteName: "Artisity", type: "website" },
 };
 
 // viewport-fit=cover makes env(safe-area-inset-bottom) report the home-indicator inset
@@ -46,7 +48,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }}
         />
         <header className="sticky top-0 z-10 flex h-16 items-center gap-4 bg-background px-4 md:px-6">
-          <Suspense>
+          <Suspense fallback={<TopNavSkeleton />}>
             <TopNav />
           </Suspense>
         </header>

@@ -1,8 +1,12 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { Loading } from "@/components/loading";
+import { InboxSkeleton } from "@/components/skeletons";
 import { Inbox, InboxResizer, type InboxItem } from "@/components/inbox";
+import { isUnread } from "@/lib/conversations";
+
+export const metadata: Metadata = { title: "Messages" };
 
 type Person = { id: string; display_name: string | null; avatar_url: string | null };
 type Last = NonNullable<InboxItem["last"]> & { id: number };
@@ -36,7 +40,7 @@ async function InboxLoader() {
       lastMessageAt: c.last_message_at,
       other: { id: other.id, name: other.display_name ?? "Unnamed", avatar: other.avatar_url },
       last,
-      unread: !!last && last.sender_id !== user.sub && last.id > readId,
+      unread: isUnread(last, readId, user.sub),
     };
   });
   return <Inbox userId={user.sub} items={items} />;
@@ -54,7 +58,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
           aria-label="Conversations"
           className="flex min-h-0 w-full flex-col max-md:group-has-[[data-chat]]/messages:hidden md:w-[var(--inbox-w,20rem)] md:shrink-0 lg:w-[var(--inbox-w,24rem)]"
         >
-          <Suspense fallback={<Loading />}>
+          <Suspense fallback={<InboxSkeleton />}>
             <InboxLoader />
           </Suspense>
         </aside>

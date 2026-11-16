@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { errorText } from "@/lib/utils";
 import { openConversation } from "@/lib/conversations";
-import { MessageCircle } from "lucide-react";
+import { Loader2, MessageCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -41,11 +41,16 @@ export function MessageButton({
         type="button"
         onClick={handleClick}
         disabled={isLoading}
+        aria-busy={isLoading}
         aria-label={`Message ${artistName}`}
         title="Message"
         className={className}
       >
-        <MessageCircle className="size-5" />
+        {isLoading ? (
+          <Loader2 className="size-5 animate-spin motion-reduce:animate-none" />
+        ) : (
+          <MessageCircle className="size-5" />
+        )}
       </button>
       {error && (
         <p role="alert" className="basis-full text-sm text-destructive">

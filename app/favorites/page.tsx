@@ -3,11 +3,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { Loading } from "@/components/loading";
+import { PostGridSkeleton } from "@/components/skeletons";
 import { Masonry } from "@/components/masonry";
 import { CARD_POST_COLUMNS, PostCard, postCard } from "@/components/post-card";
 
-export const metadata: Metadata = { title: "Favorites · Artisity" };
+export const metadata: Metadata = { title: "Favorites" };
 
 // Posts the viewer liked, most recently liked first. Unliking here leaves the card in place
 // (heart cleared) until the next visit, so a slip of the finger is easy to undo.
@@ -55,7 +55,7 @@ export default function Page() {
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4">
       <h1 className="pt-6 text-3xl font-bold tracking-tight sm:text-4xl">Favorites</h1>
-      <Suspense fallback={<Loading />}>
+      <Suspense fallback={<PostGridSkeleton />}>
         <Favorites />
       </Suspense>
     </main>

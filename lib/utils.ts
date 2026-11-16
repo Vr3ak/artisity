@@ -156,3 +156,19 @@ export function averageRating(reviews: { rating: number }[]) {
   if (!reviews.length) return null;
   return Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) * 10) / 10;
 }
+
+// One-paragraph summary for a meta description: whitespace folded, cut at a word near `max`.
+// undefined for empty text, so callers can fall back with ??
+export function clip(text: string | null | undefined, max = 160) {
+  const t = text?.replace(/\s+/g, " ").trim();
+  if (!t) return undefined;
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max - 1);
+  return `${cut.slice(0, cut.lastIndexOf(" ") > max / 2 ? cut.lastIndexOf(" ") : cut.length)}…`;
+}
+
+// "Messages, 2 unread": a nav badge's count, for the link's accessible name.
+// Here, not in tab-bar.tsx: the server-rendered TopNav calls it, and a "use client" module's
+// functions can't run on the server
+export const withCount = (label: string, count: number, noun: string) =>
+  count > 0 ? `${label}, ${count} ${noun}` : label;

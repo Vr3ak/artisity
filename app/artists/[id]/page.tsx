@@ -1,8 +1,9 @@
-import { Loading } from "@/components/loading";
+import { ProfileSkeleton } from "@/components/skeletons";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { isUuid } from "@/lib/utils";
+import { clip, isUuid } from "@/lib/utils";
 import {
   PROFILE_REVIEW_COLUMNS,
   ProfileView,
@@ -61,9 +62,33 @@ export default function Page({
 }) {
   return (
     <main className="w-full">
-      <Suspense fallback={<Loading />}>
+      <Suspense fallback={<ProfileSkeleton />}>
         <Artist params={params} searchParams={searchParams} />
       </Suspense>
     </main>
   );
+}
+
+// Link previews (Telegram, Facebook): name, bio and cover (or avatar)
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id: key } = await params;
+  const supabase = await createClient();
+  const { data: artist } = await supabase
+    .from("profiles")
+    .select("display_name, username, bio, location, cover_url, avatar_url")
+    .eq(isUuid(key) ? "id" : "username", decodeURIComponent(key).toLowerCase())
+    .eq("role", "artist")
+    .maybeSingle();
+  if (!artist) return {};
+  const title = artist.display_name ?? (artist.username ? `@${artist.username}` : "Artist");
+  const description =
+    clip(artist.bio) ?? `${title}${artist.location ? `, ${artist.location}` : ""}. Commission original, human-made work on Artisity.`;
+  const image = artist.cover_url ?? artist.avatar_url;
+  const images = image ? [image] : undefined;
+  return {
+    title,
+    description,
+    openGraph: { title, description, images, type: "profile" },
+    twitter: { card: image === artist.cover_url && image ? "summary_large_image" : "summary", title, description, images },
+  };
 }

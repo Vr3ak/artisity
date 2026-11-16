@@ -3,7 +3,7 @@ import Link from "next/link";
 import { LegalPage } from "@/components/legal-page";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy · Artisity",
+  title: "Privacy Policy",
   description: "What Artisity collects, why, who can see it, and how to delete it.",
 };
 

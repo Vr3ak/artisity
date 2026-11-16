@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -5,7 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 import { categoryLabel } from "@/lib/options";
 import { formatPrice } from "@/lib/utils";
 import { RequestStatus } from "@/components/request-status";
-import { Loading } from "@/components/loading";
+import { RequestListSkeleton } from "@/components/skeletons";
+
+export const metadata: Metadata = { title: "Requests" };
 
 type Request = {
   id: string;
@@ -118,7 +121,7 @@ export default function Page() {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-6 md:py-10">
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Requests</h1>
-      <Suspense fallback={<Loading />}>
+      <Suspense fallback={<RequestListSkeleton />}>
         <Requests />
       </Suspense>
     </main>
