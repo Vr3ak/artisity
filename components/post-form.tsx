@@ -122,7 +122,7 @@ export function PostForm({
   };
 
   return (
-    <form onSubmit={submit} noValidate className="flex flex-col gap-6 rounded-3xl bg-nav p-6 sm:p-8">
+    <form onSubmit={submit} noValidate className="flex flex-col gap-6 rounded-3xl bg-nav p-6 shadow-card sm:p-8">
       {post ? (
         <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {post.imageUrls.map((url, i) => (

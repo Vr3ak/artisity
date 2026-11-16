@@ -49,7 +49,7 @@ function RequestList({
             <li key={r.id}>
               <Link
                 href={`/requests/${r.id}`}
-                className="flex items-center gap-4 rounded-2xl bg-card px-5 py-4 transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex items-center gap-4 rounded-2xl bg-card px-5 py-4 shadow-card transition-[background-color,box-shadow,transform] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-raised motion-reduce:transition-none motion-reduce:hover:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   {/* The other side's profile can be hidden by RLS (e.g. no shared conversation) */}
@@ -100,7 +100,7 @@ async function Requests() {
         requests={sent}
         other="artist"
         empty={
-          <div className="flex flex-col items-start gap-3 rounded-2xl bg-card p-5">
+          <div className="flex flex-col items-start gap-3 rounded-2xl bg-card p-5 shadow-card">
             <p className="text-muted-foreground">
               You haven&apos;t sent a request yet. Find an artist and request a commission from their profile.
             </p>

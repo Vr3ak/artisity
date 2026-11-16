@@ -72,7 +72,7 @@ async function Request({ params }: { params: Promise<{ id: string }> }) {
         All requests
       </Link>
 
-      <article className="flex flex-col gap-6 rounded-3xl bg-card p-6 sm:p-8">
+      <article className="flex flex-col gap-6 rounded-3xl bg-card p-6 shadow-card sm:p-8">
         <header className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-3xl font-bold tracking-tight">{categoryLabel(request.category)}</h1>
@@ -163,7 +163,7 @@ async function Request({ params }: { params: Promise<{ id: string }> }) {
       {chat && conversationId && (
         <section
           aria-label={`Chat with ${otherName}`}
-          className="flex h-[32rem] flex-col overflow-hidden rounded-3xl bg-card"
+          className="flex h-[32rem] flex-col overflow-hidden rounded-3xl bg-card shadow-card"
         >
           <RealtimeChat
             conversationId={conversationId}

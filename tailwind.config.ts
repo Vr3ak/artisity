@@ -68,6 +68,10 @@ export default {
       boxShadow: {
         // Raised flow cards and the sticky save bar; color follows the theme
         float: "0 24px 60px -20px hsl(var(--shadow))",
+        // Cards on the page: a lit top edge, a contact shadow and a soft drop below
+        card: "inset 0 1px 0 0 hsl(var(--highlight)), 0 1px 2px 0 hsl(var(--shadow-soft)), 0 12px 28px -16px hsl(var(--shadow))",
+        // The same card lifted, for hover on links
+        raised: "inset 0 1px 0 0 hsl(var(--highlight)), 0 2px 6px 0 hsl(var(--shadow-soft)), 0 22px 44px -18px hsl(var(--shadow))",
       },
       borderRadius: {
         lg: "var(--radius)",

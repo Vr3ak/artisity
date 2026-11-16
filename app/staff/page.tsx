@@ -67,7 +67,7 @@ async function Users() {
         ) : (
           <ul className="flex flex-col gap-3">
             {reports.map((r) => (
-              <li key={r.id} className="flex flex-col gap-2 rounded-2xl bg-card p-4 text-sm">
+              <li key={r.id} className="flex flex-col gap-2 rounded-2xl bg-card p-4 text-sm shadow-card">
                 <p>
                   {person(r.reported as unknown as Person)} reported for{" "}
                   <strong>{reportReasonLabel(r.reason)}</strong> by {person(r.reporter as unknown as Person)}

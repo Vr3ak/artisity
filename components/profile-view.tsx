@@ -94,7 +94,7 @@ function SetupChecklist({ artist }: { artist: ProfileData }) {
   const done = tasks.filter((t) => t.done).length;
   if (done === tasks.length) return null;
   return (
-    <section aria-labelledby="setup-heading" className="flex flex-col gap-3 rounded-3xl bg-card p-5">
+    <section aria-labelledby="setup-heading" className="flex flex-col gap-3 rounded-3xl bg-card p-5 shadow-card">
       <div className="flex items-baseline justify-between gap-3">
         <h2 id="setup-heading" className="font-semibold">Finish your profile</h2>
         <span className="text-sm tabular-nums text-muted-foreground">
@@ -243,14 +243,15 @@ export function ProfileView({
             ) : (
               <>
                 {open ? (
+                  // Its own full-width row (VGen): the 18rem column can't fit it beside up to three round buttons
                   <Link
                     href={requestHref()}
-                    className={`${pillClass} flex-1 bg-foreground text-background hover:bg-foreground/90`}
+                    className={`${pillClass} basis-full bg-foreground text-background hover:bg-foreground/90`}
                   >
                     Request commission
                   </Link>
                 ) : (
-                  <span aria-disabled className={`${pillClass} flex-1 cursor-not-allowed bg-secondary text-muted-foreground`}>
+                  <span aria-disabled className={`${pillClass} basis-full cursor-not-allowed bg-secondary text-muted-foreground`}>
                     Commissions closed
                   </span>
                 )}
@@ -313,7 +314,7 @@ export function ProfileView({
 
         <div className="flex min-w-0 flex-col gap-5 md:pt-6">
           {!isArtist ? (
-            <div className="flex flex-col items-start gap-4 rounded-3xl bg-card p-6 sm:p-8">
+            <div className="flex flex-col items-start gap-4 rounded-3xl bg-card p-6 shadow-card sm:p-8">
               <h2 className="text-2xl font-bold tracking-tight">Your profile is private</h2>
               <p className="text-muted-foreground">
                 Only you and the artists you message or send commission requests to can see it.
@@ -396,14 +397,24 @@ export function ProfileView({
                     <li
                       key={s.category}
                       id={s.category}
-                      className="flex scroll-mt-24 flex-col gap-5 rounded-3xl bg-card p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8"
+                      className="flex scroll-mt-24 flex-col gap-5 rounded-3xl bg-card p-6 shadow-card sm:flex-row sm:items-center sm:justify-between sm:p-8"
                     >
                       <div className="flex flex-col gap-1">
                         <h2 className="text-2xl font-bold tracking-tight">
                           {categoryLabel(s.category)}
                         </h2>
+                        {/* Prices carry the gold: it's what clients compare across artists */}
                         <p className="text-lg tabular-nums text-muted-foreground">
-                          {s.price ? `From ${formatPrice(s.price.price_min, s.price.price_max, s.price.currency)}` : "Ask for a quote"}
+                          {s.price ? (
+                            <>
+                              From{" "}
+                              <span className="font-semibold text-primary-ink">
+                                {formatPrice(s.price.price_min, s.price.price_max, s.price.currency)}
+                              </span>
+                            </>
+                          ) : (
+                            "Ask for a quote"
+                          )}
                         </p>
                       </div>
                       {!isOwn && !blocked && open && (
@@ -431,7 +442,7 @@ export function ProfileView({
                 <RatingSummary reviews={reviews} className="text-lg" />
                 <ul className="flex flex-col gap-3">
                   {reviews.map((r) => (
-                    <li key={r.id} className="flex flex-col gap-2 rounded-3xl bg-card p-5 sm:p-6">
+                    <li key={r.id} className="flex flex-col gap-2 rounded-3xl bg-card p-5 shadow-card sm:p-6">
                       <p className="flex items-center gap-2">
                         <Stars value={r.rating} className="text-lg" />
                         <span className="sr-only">{r.rating} out of 5</span>
@@ -462,7 +473,7 @@ export function ProfileView({
                 <li key={post.id}>
                   <Link
                     href={`/posts/${post.id}`}
-                    className="group relative block aspect-square overflow-hidden rounded-2xl bg-secondary outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="group relative block aspect-square overflow-hidden rounded-2xl bg-secondary shadow-card outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <ImageCarousel
                       images={postImagePaths(post.image_path, post.image_count).map(profileImageUrl)}
