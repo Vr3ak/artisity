@@ -4,10 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { CategoryChips } from "@/components/category-chips";
 import { SiteFooter } from "@/components/site-footer";
-import { Loading } from "@/components/loading";
+import { HomeFeedSkeleton } from "@/components/skeletons";
 import { BannerCarousel, type BannerSlide } from "@/components/banner-carousel";
 import { CARD_POST_COLUMNS, postCard } from "@/components/post-card";
-import { HomeFeed } from "@/components/home-feed";
+import { FEED_PAGE, HomeFeed } from "@/components/home-feed";
 import { isCategory } from "@/lib/options";
 
 type Search = Promise<{ category?: string }>;
@@ -21,7 +21,7 @@ async function Posts({ searchParams }: { searchParams: Search }) {
     .from("posts")
     .select(CARD_POST_COLUMNS)
     .order("created_at", { ascending: false })
-    .limit(48);
+    .limit(FEED_PAGE);
   if (category) query = query.eq("category", category);
   const [{ data: posts, error }, { data: claims }] = await Promise.all([query, supabase.auth.getClaims()]);
   if (error) throw error;
@@ -39,7 +39,11 @@ async function Posts({ searchParams }: { searchParams: Search }) {
     : { data: [], error: null };
   if (likesError) throw likesError;
 
-  return <HomeFeed cards={feed} liked={likes.map((l) => l.post_id)} viewerId={viewerId} category={category} />;
+  // A full page means there may be more; HomeFeed loads the rest older than this
+  const cursor = posts.length === FEED_PAGE ? posts[posts.length - 1].created_at : null;
+  return (
+    <HomeFeed cards={feed} liked={likes.map((l) => l.post_id)} viewerId={viewerId} category={category} cursor={cursor} />
+  );
 }
 
 async function Services({ searchParams }: { searchParams: Search }) {
@@ -86,8 +90,8 @@ export default function Home({ searchParams }: { searchParams: Search }) {
             <Input
               type="search"
               name="q"
-              placeholder="Search artists by name"
-              aria-label="Search artists by name"
+              placeholder="Search artists"
+              aria-label="Search artists by name or @username"
               className="h-12 rounded-full pl-12 text-base"
             />
           </form>
@@ -104,7 +108,7 @@ export default function Home({ searchParams }: { searchParams: Search }) {
 
         {/* No gap: HomeFeed's sticky bar is the first child and brings its own height */}
         <section className="flex flex-col">
-          <Suspense fallback={<Loading />}>
+          <Suspense fallback={<HomeFeedSkeleton />}>
             <Posts searchParams={searchParams} />
           </Suspense>
         </section>

@@ -3,24 +3,28 @@
 import { createClient } from "@/lib/supabase/client";
 import { openConversation } from "@/lib/conversations";
 import { CURRENCIES, categoryLabel } from "@/lib/options";
-import { cn, errorText } from "@/lib/utils";
+import { cn, errorText, formatPrice } from "@/lib/utils";
 import { FormError } from "@/components/auth-parts";
 import { Field, SelectField, fieldClass, pillClass } from "@/components/flow";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+export type PricedService = { category: string; price_min: number; price_max: number; currency: string };
+
 export function RequestForm({
   userId,
   artistId,
   artistName,
   categories,
+  services,
   initialCategory,
 }: {
   userId: string;
   artistId: string;
   artistName: string;
   categories: string[];
+  services: PricedService[];
   initialCategory?: string;
 }) {
   const [category, setCategory] = useState(
@@ -30,7 +34,10 @@ export function RequestForm({
   );
   const [brief, setBrief] = useState("");
   const [budget, setBudget] = useState("");
-  const [currency, setCurrency] = useState<string>(CURRENCIES[0]);
+  // Fiverr shows the gig's price beside the order: the chosen service's range, in its currency
+  const priceOf = (c: string) => services.find((s) => s.category === c);
+  const price = priceOf(category);
+  const [currency, setCurrency] = useState<string>(price?.currency ?? CURRENCIES[0]);
   const [deadline, setDeadline] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -76,9 +83,34 @@ export function RequestForm({
         </p>
       </div>
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6 rounded-3xl bg-nav p-6 sm:p-8">
-        <Field label="Service">
+        <Field
+          label="Service"
+          hint={
+            price ? (
+              <>
+                {artistName} usually charges{" "}
+                <span className="font-semibold tabular-nums text-foreground">
+                  {formatPrice(price.price_min, price.price_max, price.currency)}
+                </span>{" "}
+                for this.
+              </>
+            ) : (
+              "No listed price for this one. Put your budget below or ask for a quote in the brief."
+            )
+          }
+        >
           {(id) => (
-            <SelectField id={id} required value={category} onChange={(e) => setCategory(e.target.value)}>
+            <SelectField
+              id={id}
+              required
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                // Follow the service's currency until the client types a budget of their own
+                const next = priceOf(e.target.value);
+                if (next && !budget) setCurrency(next.currency);
+              }}
+            >
               {categories.map((c) => (
                 <option key={c} value={c}>
                   {categoryLabel(c)}

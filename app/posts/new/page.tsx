@@ -2,16 +2,18 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { loginHref } from "@/lib/utils";
 import { PostForm } from "@/components/post-form";
 import { Loading } from "@/components/loading";
 
-export const metadata: Metadata = { title: "New post · Artisity" };
+export const metadata: Metadata = { title: "New post" };
 
 async function NewPost() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
-  if (!user) redirect("/auth/login");
+  // The proxy lets /posts* through signed out, so send them back here after logging in
+  if (!user) redirect(loginHref("/posts/new"));
 
   const { data: profile, error } = await supabase
     .from("profiles")

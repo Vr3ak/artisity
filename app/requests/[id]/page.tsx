@@ -8,6 +8,7 @@ import { contactLinks, formatPrice, profileHref } from "@/lib/utils";
 import { loadChat } from "@/lib/chat";
 import { findConversation } from "@/lib/conversations";
 import { RequestStatus } from "@/components/request-status";
+import { RequestTimeline } from "@/components/request-timeline";
 import { RealtimeChat } from "@/components/realtime-chat";
 import { RequestActions } from "@/components/request-actions";
 import { Loading } from "@/components/loading";
@@ -93,6 +94,8 @@ async function Request({ params }: { params: Promise<{ id: string }> }) {
             {date(request.created_at)}
           </p>
         </header>
+
+        <RequestTimeline status={request.status} />
 
         <p className="max-w-prose whitespace-pre-line leading-relaxed">{request.brief}</p>
 

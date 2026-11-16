@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -6,6 +7,8 @@ import { reportReasonLabel } from "@/lib/options";
 import { profileHref } from "@/lib/utils";
 import { ResolveButton } from "./resolve-button";
 import { Loading } from "@/components/loading";
+
+export const metadata: Metadata = { title: "Staff" };
 
 type Person = { id: string; display_name: string | null; username: string | null; role: string | null } | null;
 

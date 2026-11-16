@@ -1,4 +1,5 @@
-import { Loading } from "@/components/loading";
+import type { Metadata } from "next";
+import { ProfileSkeleton } from "@/components/skeletons";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
@@ -8,6 +9,8 @@ import {
   parseTab,
   type ProfileData,
 } from "@/components/profile-view";
+
+export const metadata: Metadata = { title: "Your profile" };
 
 type Search = Promise<{ tab?: string }>;
 
@@ -43,7 +46,7 @@ async function Profile({ searchParams }: { searchParams: Search }) {
 export default function Page({ searchParams }: { searchParams: Search }) {
   return (
     <main className="w-full">
-      <Suspense fallback={<Loading />}>
+      <Suspense fallback={<ProfileSkeleton />}>
         <Profile searchParams={searchParams} />
       </Suspense>
     </main>

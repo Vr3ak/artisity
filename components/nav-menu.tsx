@@ -30,9 +30,12 @@ export function NavMenu({
   role,
   trigger,
   side = "bottom",
+  requests = 0,
 }: {
   signedIn: boolean;
   role: string | null;
+  // Requests waiting on the viewer, shown beside the Requests item
+  requests?: number;
   trigger: React.ReactNode;
   side?: "top" | "bottom";
 }) {
@@ -86,7 +89,15 @@ export function NavMenu({
               </DropdownMenuItem>
             )}
             <DropdownMenuItem asChild>
-              <Link href="/requests">Requests</Link>
+              <Link href="/requests" className="justify-between">
+                Requests
+                {requests > 0 && (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold tabular-nums text-primary-foreground">
+                    {requests}
+                    <span className="sr-only"> waiting on you</span>
+                  </span>
+                )}
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href="/profile">Profile</Link>

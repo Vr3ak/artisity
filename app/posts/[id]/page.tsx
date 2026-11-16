@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -5,11 +6,16 @@ import { LikeButton } from "@/components/like-button";
 import { MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { categoryLabel } from "@/lib/options";
-import { loginHref, postImagePaths, profileHref, profileImageUrl } from "@/lib/utils";
+import { clip, loginHref, postImagePaths, profileHref, profileImageUrl } from "@/lib/utils";
 import { Avatar } from "@/components/tab-bar";
 import { DeletePostButton } from "@/components/delete-post-button";
 import { MessageButton } from "@/components/message-button";
 import { Loading } from "@/components/loading";
+import { Lightbox } from "@/components/lightbox";
+import { ShareButton } from "@/components/share-button";
+import { Masonry } from "@/components/masonry";
+import { CARD_POST_COLUMNS, PostCard, postCard } from "@/components/post-card";
+import { PostGridSkeleton } from "@/components/skeletons";
 
 type Artist = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; commissions_open: boolean };
 
@@ -45,8 +51,15 @@ async function Post({ params }: { params: Promise<{ id: string }> }) {
   const requestPath = `/requests/new?artist=${artist.id}${post.category ? `&category=${post.category}` : ""}`;
   const requestHref = viewerId ? requestPath : loginHref(requestPath);
 
+  // Each image opens the full-screen viewer (components/lightbox.tsx) at its own index
   const image = (i: number) => (
-    <div key={imagePaths[i]} className="overflow-hidden rounded-3xl bg-secondary md:col-start-1">
+    <button
+      key={imagePaths[i]}
+      type="button"
+      data-lightbox={i}
+      aria-label={`View ${imagePaths.length > 1 ? `image ${i + 1}` : "image"} full screen`}
+      className="block w-full cursor-zoom-in overflow-hidden rounded-3xl bg-secondary outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background md:col-start-1"
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={profileImageUrl(imagePaths[i])}
@@ -54,13 +67,15 @@ async function Post({ params }: { params: Promise<{ id: string }> }) {
         loading={i ? "lazy" : undefined}
         className="max-h-[80dvh] w-full object-contain"
       />
-    </div>
+    </button>
   );
 
   return (
     // Phones: cover, then the details (so Request is one scroll away, not past every image), then the
     // rest. md+: images stacked on the left, details sticky on the right across both image rows.
+    <>
     <article className="grid gap-6 md:grid-cols-[3fr_2fr] md:gap-x-12 md:gap-y-3">
+      <Lightbox images={imagePaths.map(profileImageUrl)} alt={post.title} />
       {/* ponytail: images stacked like a Behance project; add a carousel if long posts feel heavy */}
       {image(0)}
       {imagePaths.length > 1 && (
@@ -95,7 +110,9 @@ async function Post({ params }: { params: Promise<{ id: string }> }) {
 
         {post.caption && <p className="whitespace-pre-line leading-relaxed">{post.caption}</p>}
 
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Phones: pinned above the tab bar (Fiverr's sticky order bar), so Request stays in reach
+            while scrolling through the images. md+: in place, inside the sticky column. */}
+        <div className="flex flex-wrap items-center gap-2 max-md:fixed max-md:inset-x-0 max-md:bottom-[calc(4rem+env(safe-area-inset-bottom))] max-md:z-10 max-md:flex-nowrap max-md:border-t max-md:bg-nav max-md:px-4 max-md:py-3">
           {isOwn ? (
             <>
             <Link
@@ -140,15 +157,81 @@ async function Post({ params }: { params: Promise<{ id: string }> }) {
               />
             </>
           )}
+          <ShareButton title={post.title} path={`/posts/${post.id}`} className={circleClass} />
         </div>
       </div>
     </article>
+    <Suspense fallback={<PostGridSkeleton count={4} />}>
+      <MoreFromArtist artist={artist} postId={post.id} viewerId={viewerId} />
+    </Suspense>
+    </>
   );
+}
+
+// Behance/Dribbble's "More from this artist": keeps a visitor browsing the same hand after one piece
+async function MoreFromArtist({ artist, postId, viewerId }: { artist: Artist; postId: string; viewerId: string | undefined }) {
+  const supabase = await createClient();
+  const { data: posts, error } = await supabase
+    .from("posts")
+    .select(CARD_POST_COLUMNS)
+    .eq("artist_id", artist.id)
+    .neq("id", postId)
+    .order("created_at", { ascending: false })
+    .limit(8);
+  if (error) throw error;
+  const cards = posts.flatMap((p) => postCard(p) ?? []);
+  if (cards.length === 0) return null;
+
+  const { data: likes } = viewerId
+    ? await supabase.from("post_likes").select("post_id").in("post_id", cards.map((c) => c.postId))
+    : { data: [] };
+  const liked = new Set((likes ?? []).map((l) => l.post_id));
+
+  return (
+    <section aria-labelledby="more-from" className="mt-16 flex flex-col gap-5 border-t pt-10">
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 id="more-from" className="text-2xl font-bold tracking-tight">
+          More from {artist.display_name ?? "this artist"}
+        </h2>
+        <Link href={profileHref(artist)} className="shrink-0 text-sm font-semibold text-primary-ink underline-offset-4 hover:underline">
+          View profile
+        </Link>
+      </div>
+      <Masonry>
+        {cards.map((card) => (
+          <PostCard key={card.postId} card={card} liked={liked.has(card.postId)} viewerId={viewerId} />
+        ))}
+      </Masonry>
+    </section>
+  );
+}
+
+// Link previews (Telegram, Facebook): the post's title, artist, caption and cover image
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data: post } = await supabase
+    .from("posts")
+    .select("title, caption, image_path, artist:profiles!posts_artist_id_fkey(display_name)")
+    .eq("id", id)
+    .maybeSingle();
+  const artist = post?.artist as unknown as { display_name: string | null } | null;
+  if (!post || !artist) return {};
+  const title = `${post.title} by ${artist.display_name ?? "an artist"}`;
+  const description = clip(post.caption) ?? `Original work by ${artist.display_name ?? "a Cambodian artist"} on Artisity.`;
+  const images = [profileImageUrl(post.image_path)];
+  return {
+    title,
+    description,
+    openGraph: { title, description, images, type: "article" },
+    twitter: { card: "summary_large_image", title, description, images },
+  };
 }
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 md:px-6 md:pt-10">
+    // Phones: extra bottom room for the pinned action bar
+    <main className="mx-auto w-full max-w-6xl px-4 pb-36 pt-6 md:px-6 md:pb-16 md:pt-10">
       <Suspense fallback={<Loading />}>
         <Post params={params} />
       </Suspense>

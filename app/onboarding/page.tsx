@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingForm } from "@/components/onboarding-form";
 import { Loading } from "@/components/loading";
 import { safeRedirectPath } from "@/lib/utils";
+
+export const metadata: Metadata = { title: "Set up your profile" };
 
 async function Onboarding({
   searchParams,

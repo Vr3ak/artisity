@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { SettingsNav } from "@/components/settings-nav";
+
+export const metadata: Metadata = { title: "Settings" };
 
 // One Settings area (after Fiverr/Behance): public profile, account and security, preferences, and
 // privacy. The proxy sends signed-out visitors to log in with ?next= back here.

@@ -33,3 +33,39 @@ export async function openConversation(
   if (insertError) throw insertError;
   return data.id;
 }
+
+// A thread is unread when its newest message came from the other side after the viewer's read receipt.
+// The inbox (app/messages/layout.tsx) and the nav badge share this rule.
+export function isUnread(
+  last: { id: number; sender_id: string } | null | undefined,
+  lastReadId: number,
+  userId: string,
+) {
+  return !!last && last.sender_id !== userId && last.id > lastReadId;
+}
+
+// Nav badges: unread threads, and requests waiting on the viewer (an artist's new requests to
+// answer, a client's deliveries to confirm). RLS limits both queries to the viewer's own rows.
+export async function navCounts(supabase: SupabaseClient, userId: string) {
+  const [threads, requests] = await Promise.all([
+    supabase
+      .from("conversations")
+      .select("messages(id, sender_id), conversation_reads(last_read_id)")
+      .eq("conversation_reads.user_id", userId)
+      .order("id", { referencedTable: "messages", ascending: false })
+      .limit(1, { referencedTable: "messages" }),
+    supabase
+      .from("requests")
+      .select("id", { count: "exact", head: true })
+      .or(`and(artist_id.eq.${userId},status.eq.pending),and(client_id.eq.${userId},status.eq.delivered)`),
+  ]);
+  // A badge is a nicety: on error, show none rather than break the nav
+  const unread = (threads.data ?? []).filter((c) =>
+    isUnread(
+      (c.messages as { id: number; sender_id: string }[])[0],
+      (c.conversation_reads as { last_read_id: number }[])[0]?.last_read_id ?? 0,
+      userId,
+    ),
+  ).length;
+  return { unread, requests: requests.count ?? 0 };
+}
