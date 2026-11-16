@@ -19,8 +19,12 @@ async function ArtistGrid({
   const supabase = await createClient();
   let query = supabase
     .from("profiles")
-    .select("id, username, display_name, avatar_url, location, categories, services(price_min, currency), reviews!reviews_artist_id_fkey(rating)")
+    // !inner: only artists with at least one post are listed (their profile link still works)
+    .select("id, username, display_name, avatar_url, location, categories, services(price_min, currency), reviews!reviews_artist_id_fkey(rating), posts!posts_artist_id_fkey!inner(id), commissions_open")
     .eq("role", "artist")
+    .limit(1, { referencedTable: "posts" })
+    // Open for commissions first, then newest
+    .order("commissions_open", { ascending: false })
     .order("created_at", { ascending: false });
   // ponytail: no pagination; add .range() once there are more than a few hundred artists
   if (CATEGORIES.some((c) => c.value === category)) {
@@ -87,13 +91,17 @@ async function ArtistGrid({
                       ))}
                     </ul>
                   )}
-                  {from && (
-                    <p className="mt-auto text-sm text-muted-foreground">
-                      From{" "}
-                      <span className="font-semibold tabular-nums text-foreground">
-                        {formatPrice(from.price_min, from.price_min, from.currency)}
-                      </span>
-                    </p>
+                  {!a.commissions_open ? (
+                    <p className="mt-auto text-sm font-semibold text-muted-foreground">Commissions closed</p>
+                  ) : (
+                    from && (
+                      <p className="mt-auto text-sm text-muted-foreground">
+                        From{" "}
+                        <span className="font-semibold tabular-nums text-foreground">
+                          {formatPrice(from.price_min, from.price_min, from.currency)}
+                        </span>
+                      </p>
+                    )
                   )}
                 </Link>
               </li>

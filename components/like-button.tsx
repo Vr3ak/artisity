@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils";
+import { cn, loginHref } from "@/lib/utils";
 
 // Heart toggle for a post. Optimistic: flips at once, writes post_likes under RLS, then refreshes the
 // route so server-rendered hearts elsewhere (feed, favorites) agree. A failed write flips back and
@@ -43,7 +43,7 @@ export function LikeButton({
   }, [error]);
 
   async function toggle() {
-    if (!signedIn) return router.push("/auth/login");
+    if (!signedIn) return router.push(loginHref(location.pathname + location.search));
     if (busy) return;
     const next = !liked;
     setLiked(next);

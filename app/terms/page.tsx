@@ -78,7 +78,7 @@ export default function TermsPage() {
 
       <h2>Ending your account</h2>
       <p>
-        You can delete your account at any time from <Link href="/profile/edit">Edit profile</Link>.
+        You can delete your account at any time from <Link href="/settings/account">Settings › Account</Link>.
         Our <Link href="/privacy">Privacy Policy</Link> explains what that removes.
       </p>
 

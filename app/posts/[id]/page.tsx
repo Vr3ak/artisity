@@ -5,13 +5,13 @@ import { LikeButton } from "@/components/like-button";
 import { MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { categoryLabel } from "@/lib/options";
-import { postImagePaths, profileHref, profileImageUrl } from "@/lib/utils";
+import { loginHref, postImagePaths, profileHref, profileImageUrl } from "@/lib/utils";
 import { Avatar } from "@/components/tab-bar";
 import { DeletePostButton } from "@/components/delete-post-button";
 import { MessageButton } from "@/components/message-button";
 import { Loading } from "@/components/loading";
 
-type Artist = { id: string; username: string | null; display_name: string | null; avatar_url: string | null };
+type Artist = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; commissions_open: boolean };
 
 const pillClass =
   "inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition-colors";
@@ -24,7 +24,7 @@ async function Post({ params }: { params: Promise<{ id: string }> }) {
   const { data: post, error } = await supabase
     .from("posts")
     .select(
-      "id, title, caption, category, image_path, image_count, created_at, artist:profiles!posts_artist_id_fkey(id, username, display_name, avatar_url)",
+      "id, title, caption, category, image_path, image_count, created_at, artist:profiles!posts_artist_id_fkey(id, username, display_name, avatar_url, commissions_open)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -42,9 +42,8 @@ async function Post({ params }: { params: Promise<{ id: string }> }) {
   const { data: like } = viewerId
     ? await supabase.from("post_likes").select("post_id").eq("post_id", post.id).maybeSingle()
     : { data: null };
-  const requestHref = viewerId
-    ? `/requests/new?artist=${artist.id}${post.category ? `&category=${post.category}` : ""}`
-    : "/auth/login";
+  const requestPath = `/requests/new?artist=${artist.id}${post.category ? `&category=${post.category}` : ""}`;
+  const requestHref = viewerId ? requestPath : loginHref(requestPath);
 
   const image = (i: number) => (
     <div key={imagePaths[i]} className="overflow-hidden rounded-3xl bg-secondary md:col-start-1">
@@ -113,16 +112,22 @@ async function Post({ params }: { params: Promise<{ id: string }> }) {
             </>
           ) : (
             <>
-              <Link
-                href={requestHref}
-                className={`${pillClass} flex-1 bg-foreground text-background hover:bg-foreground/90`}
-              >
-                Request commission
-              </Link>
+              {artist.commissions_open !== false ? (
+                <Link
+                  href={requestHref}
+                  className={`${pillClass} flex-1 bg-foreground text-background hover:bg-foreground/90`}
+                >
+                  Request commission
+                </Link>
+              ) : (
+                <span aria-disabled className={`${pillClass} flex-1 cursor-not-allowed bg-secondary text-muted-foreground`}>
+                  Commissions closed
+                </span>
+              )}
               {viewerId ? (
                 <MessageButton userId={viewerId} artistId={artist.id} artistName={name} className={circleClass} />
               ) : (
-                <Link href="/auth/login" aria-label={`Message ${name}`} title="Message" className={circleClass}>
+                <Link href={loginHref(`/posts/${post.id}`)} aria-label={`Message ${name}`} title="Message" className={circleClass}>
                   <MessageCircle className="size-5" />
                 </Link>
               )}

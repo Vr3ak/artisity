@@ -3,12 +3,16 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingForm } from "@/components/onboarding-form";
 import { Loading } from "@/components/loading";
+import { safeRedirectPath } from "@/lib/utils";
 
 async function Onboarding({
   searchParams,
 }: {
-  searchParams: Promise<{ role?: string }>;
+  searchParams: Promise<{ role?: string; next?: string }>;
 }) {
+  const { role, next: rawNext } = await searchParams;
+  // Where the visitor was headed before signing up (e.g. a commission request)
+  const next = rawNext ? safeRedirectPath(rawNext) : undefined;
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
@@ -23,14 +27,14 @@ async function Onboarding({
   // No row: the account is gone (deleted elsewhere) but this browser's token hasn't expired
   if (!profile) redirect("/auth/login");
   // Role is set by the final onboarding write, so a set role means onboarding is done
-  if (profile.role) redirect("/");
+  if (profile.role) redirect(next ?? "/");
 
-  const { role } = await searchParams;
   return (
     <OnboardingForm
       userId={user.sub}
       initial={profile}
       initialRole={role === "artist" ? "artist" : "client"}
+      next={next}
     />
   );
 }
@@ -38,7 +42,7 @@ async function Onboarding({
 export default function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ role?: string }>;
+  searchParams: Promise<{ role?: string; next?: string }>;
 }) {
   return (
     // Centered like the auth cards, between the top bar and (below md) the tab bar

@@ -15,13 +15,14 @@ async function EditPost({ params }: { params: Promise<{ id: string }> }) {
   const user = data?.claims;
   if (!user) redirect("/auth/login");
 
-  const [{ data: post, error }, { data: services }] = await Promise.all([
+  const [{ data: post, error }, { data: me }] = await Promise.all([
     supabase
       .from("posts")
       .select("id, artist_id, title, caption, category, image_path, image_count")
       .eq("id", id)
       .maybeSingle(),
-    supabase.from("services").select("category").eq("artist_id", user.sub),
+    // Every picked service, priced or not
+    supabase.from("profiles").select("categories").eq("id", user.sub).maybeSingle(),
   ]);
   // 22P02: id isn't a uuid
   if (error && error.code !== "22P02") throw error;
@@ -30,7 +31,7 @@ async function EditPost({ params }: { params: Promise<{ id: string }> }) {
   return (
     <PostForm
       userId={user.sub}
-      services={(services ?? []).map((s) => s.category)}
+      services={(me?.categories as string[] | undefined) ?? []}
       post={{
         id: post.id,
         title: post.title,

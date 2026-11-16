@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { toUsername, usernameError } from "@/lib/utils";
+import { carryNext, toUsername, usernameError } from "@/lib/utils";
 import { OAuthButtons } from "@/components/oauth-buttons";
 import { FormError, MIN_PASSWORD } from "@/components/auth-parts";
 import {
@@ -129,7 +129,7 @@ export function SignUpForm() {
       setBusy(null);
       return setError(error.message);
     }
-    router.push(`/onboarding?role=${isArtist ? "artist" : "client"}`);
+    router.push(carryNext(`/onboarding?role=${isArtist ? "artist" : "client"}`, location.search));
     router.refresh();
   };
 
@@ -168,6 +168,11 @@ export function SignUpForm() {
           <Link
             href="/auth/login"
             replace
+            // Keeps ?next= (read on click: rendering it would need useSearchParams and a Suspense boundary)
+            onClick={(e) => {
+              e.preventDefault();
+              router.replace(carryNext("/auth/login", location.search));
+            }}
             className="font-semibold text-foreground underline underline-offset-4"
           >
             Log in

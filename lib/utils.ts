@@ -9,6 +9,18 @@ export function safeRedirectPath(next: string | null): string {
   return url.origin === base ? url.pathname + url.search + url.hash : "/";
 }
 
+// "Log in to do this" link that comes back to `next` afterwards (through sign-up and onboarding too)
+export const loginHref = (next: string) => `/auth/login?next=${encodeURIComponent(next)}`;
+
+// `path` with the ?next= from the current URL's `search` carried along, so each auth hop keeps it
+export function carryNext(path: string, search: string) {
+  const next = new URLSearchParams(search).get("next");
+  if (!next) return path;
+  const url = new URL(path, "http://same.origin");
+  url.searchParams.set("next", safeRedirectPath(next));
+  return url.pathname + url.search;
+}
+
 // Public profile URL: /@username once chosen, else the id route
 export function profileHref(p: { id: string; username?: string | null }) {
   return p.username ? `/@${p.username}` : `/artists/${p.id}`;
@@ -122,6 +134,24 @@ export function masonryLayout(keys: string[], n: number, heights: Record<string,
 }
 
 // Average star rating rounded to one decimal; null when there are no reviews
+// Home feed price filter, compared in USD against the "From" price a card shows.
+// ponytail: fixed riel rate (managed float near 4,000); read a live rate if it drifts
+export const KHR_PER_USD = 4000;
+export const PRICE_RANGES = [
+  { label: "Under $25", min: 0, max: 25 },
+  { label: "$25 – $50", min: 25, max: 50 },
+  { label: "$50 – $100", min: 50, max: 100 },
+  { label: "$100+", min: 100, max: Infinity },
+];
+export function inPriceRange(
+  service: { price_min: number; currency: string } | undefined,
+  range: { min: number; max: number },
+) {
+  if (!service) return false;
+  const usd = service.currency === "KHR" ? service.price_min / KHR_PER_USD : service.price_min;
+  return usd >= range.min && usd < range.max;
+}
+
 export function averageRating(reviews: { rating: number }[]) {
   if (!reviews.length) return null;
   return Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) * 10) / 10;

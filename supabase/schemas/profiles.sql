@@ -27,6 +27,8 @@ create table public.profiles (
   business_type text check (char_length(business_type) <= 60),
   -- Public handle for /@username URLs; null until chosen at sign-up or onboarding
   username text unique check (username ~ '^[a-z0-9_]{3,30}$'),
+  -- Artist's commission status; when false, clients can message but not send requests
+  commissions_open boolean not null default true,
   created_at timestamptz not null default now()
 );
 
@@ -96,6 +98,21 @@ $$;
 
 revoke execute on function private.is_artist(uuid) from public, anon;
 grant execute on function private.is_artist(uuid) to authenticated;
+
+-- An artist taking commissions right now (the requests insert policy). Security definer for the
+-- same no-recursion reason as is_artist.
+create function private.accepts_requests(uid uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (select 1 from public.profiles where id = uid and role = 'artist' and commissions_open);
+$$;
+
+revoke execute on function private.accepts_requests(uuid) from public, anon;
+grant execute on function private.accepts_requests(uuid) to authenticated;
 
 create function private.handle_new_user()
 returns trigger

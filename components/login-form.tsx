@@ -14,9 +14,10 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { carryNext, safeRedirectPath } from "@/lib/utils";
 
-// Onboarded users are bounced from /onboarding to /; a first-time Google login lands in onboarding,
-// which asks for the role itself.
+// Onboarded users are bounced from /onboarding to ?next= (or /); a first-time Google login lands in
+// onboarding, which asks for the role itself. Every hop carries ?next= along (carryNext).
 const NEXT = "/onboarding";
 
 // Same card system as sign-up (after vgen.co)
@@ -46,16 +47,21 @@ export function LoginForm() {
       setIsLoading(false);
       return;
     }
-    // In the modal, onboarded users stay on the page they were on
+    // In the modal, onboarded users go where they were headed, else stay on the page underneath
+    const next = new URLSearchParams(location.search).get("next");
     if (modal) {
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", data.user.id)
         .maybeSingle();
-      if (profile?.role) return modal.close();
+      if (profile?.role && !next) return modal.close();
+      if (profile?.role) {
+        router.push(safeRedirectPath(next));
+        return router.refresh();
+      }
     }
-    router.push(NEXT);
+    router.push(carryNext(NEXT, location.search));
     // Root layout's header is server-rendered; refresh so it shows the user
     router.refresh();
   };
@@ -118,6 +124,11 @@ export function LoginForm() {
         <Link
           href="/auth/sign-up"
           replace
+          // Keeps ?next= (read on click: rendering it would need useSearchParams and a Suspense boundary)
+          onClick={(e) => {
+            e.preventDefault();
+            router.replace(carryNext("/auth/sign-up", location.search));
+          }}
           className="font-semibold text-foreground underline underline-offset-4"
         >
           Create an account

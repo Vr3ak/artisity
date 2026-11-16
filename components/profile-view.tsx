@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  ChevronRight,
   Facebook,
   Instagram,
   MapPin,
@@ -8,7 +9,7 @@ import {
   Send,
 } from "lucide-react";
 import { categoryLabel } from "@/lib/options";
-import { contactLinks, formatPrice, postImagePaths, profileImageUrl } from "@/lib/utils";
+import { contactLinks, formatPrice, loginHref, postImagePaths, profileHref, profileImageUrl } from "@/lib/utils";
 import { ImageCarousel } from "@/components/image-carousel";
 import { MessageButton } from "@/components/message-button";
 import { SafetyMenu } from "@/components/safety-menu";
@@ -39,9 +40,14 @@ export type ProfileData = {
   // Public for artists; clients' only reach their own page and request partners (RLS)
   contact_methods?: { telegram: string | null; facebook: string | null; instagram: string | null } | null;
   role: string | null;
+  // Artists only: false hides Request (the requests insert policy enforces it)
+  commissions_open?: boolean;
+  created_at?: string;
   business_name?: string | null;
   business_type?: string | null;
+  // Priced services; `categories` also lists the ones picked without a price yet
   services: Service[];
+  categories?: string[];
   // Newest first; only artists have posts
   posts?: { id: string; title: string; image_path: string; image_count: number }[];
   // Newest first; only artists get reviews
@@ -54,6 +60,77 @@ const circleClass =
   "flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary transition-colors hover:bg-accent disabled:opacity-50";
 
 const CONTACT_ICONS = { telegram: Send, facebook: Facebook, instagram: Instagram };
+
+// Every service the artist offers, with its price once set (onboarding picks them unpriced)
+function offers(artist: ProfileData) {
+  const priced = new Map(artist.services.map((s) => [s.category, s]));
+  return [...new Set([...artist.services.map((s) => s.category), ...(artist.categories ?? [])])].map(
+    (category) => ({ category, price: priced.get(category) }),
+  );
+}
+
+// The owner's "Finish your profile" card (VGen's Getting Started, Contra's checklist), worked out
+// from the profile itself so onboarding's skipped cards aren't forgotten. Gone once all are done.
+// ponytail: four derived checks; move them into lib/utils.ts with a test if more are added.
+function SetupChecklist({ artist }: { artist: ProfileData }) {
+  const tasks = [
+    { done: !!artist.avatar_url, label: "Add a profile photo", href: "/settings/profile" },
+    {
+      done: offers(artist).every((o) => o.price),
+      label: "Set your prices",
+      hint: "Until then clients ask you for a quote.",
+      href: "/settings/profile#services",
+    },
+    { done: !!artist.bio, label: "Write a short bio", href: "/settings/profile" },
+    {
+      done: (artist.posts ?? []).length > 0,
+      label: "Add your first post",
+      hint: "You're not listed under Commission until you do.",
+      href: "/posts/new",
+    },
+    { done: contactLinks(artist.contact_methods ?? null).length > 0, label: "Add a social link", href: "/settings/profile" },
+  ];
+  const done = tasks.filter((t) => t.done).length;
+  if (done === tasks.length) return null;
+  return (
+    <section aria-labelledby="setup-heading" className="flex flex-col gap-3 rounded-3xl bg-card p-5">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="setup-heading" className="font-semibold">Finish your profile</h2>
+        <span className="text-sm tabular-nums text-muted-foreground">
+          {done}/{tasks.length}
+        </span>
+      </div>
+      <div
+        role="progressbar"
+        aria-label="Profile setup"
+        aria-valuemin={0}
+        aria-valuemax={tasks.length}
+        aria-valuenow={done}
+        className="h-1.5 overflow-hidden rounded-full bg-secondary"
+      >
+        <div className="h-full rounded-full bg-primary" style={{ width: `${(done / tasks.length) * 100}%` }} />
+      </div>
+      <ul className="-mx-2 flex flex-col">
+        {tasks
+          .filter((t) => !t.done)
+          .map((t) => (
+            <li key={t.label}>
+              <Link
+                href={t.href}
+                className="flex items-center gap-3 rounded-2xl px-2 py-2 text-sm transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="font-medium">{t.label}</span>
+                  {t.hint && <span className="text-muted-foreground">{t.hint}</span>}
+                </span>
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+              </Link>
+            </li>
+          ))}
+      </ul>
+    </section>
+  );
+}
 
 // Profile page after vgen.co: full-bleed cover, a sticky left column (avatar, name, @handle,
 // actions, bio, links) and tabbed content on the right. Shared by the public artist page and
@@ -72,16 +149,17 @@ export function ProfileView({
 }) {
   const id = artist.id;
   const name = artist.display_name ?? "Unnamed";
-  const { services } = artist;
+  const services = offers(artist);
   const posts = artist.posts ?? [];
   const reviews = artist.reviews ?? [];
   const links = contactLinks(artist.contact_methods ?? null);
   const isOwn = viewerId === id;
   const isArtist = artist.role === "artist";
-  const requestHref = (category?: string) =>
-    viewerId
-      ? `/requests/new?artist=${id}${category ? `&category=${category}` : ""}`
-      : "/auth/login";
+  const open = artist.commissions_open !== false;
+  const requestHref = (category?: string) => {
+    const path = `/requests/new?artist=${id}${category ? `&category=${category}` : ""}`;
+    return viewerId ? path : loginHref(path);
+  };
 
   return (
     <>
@@ -110,6 +188,13 @@ export function ProfileView({
             {artist.username && (
               <p className="text-sm text-muted-foreground">@{artist.username}</p>
             )}
+            {/* Commission status, after VGen's comm status and Dribbble's "Available for work" */}
+            {isArtist && (
+              <p className="mt-2 flex items-center gap-2 text-sm font-semibold">
+                <span aria-hidden className={`size-2.5 rounded-full ${open ? "bg-primary" : "bg-muted-foreground"}`} />
+                {open ? "Open for commissions" : "Commissions closed"}
+              </p>
+            )}
             {isArtist && (
               <Link href="?tab=reviews" scroll={false} className="mt-1 w-fit text-sm hover:underline">
                 <RatingSummary reviews={reviews} />
@@ -119,6 +204,12 @@ export function ProfileView({
               <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
                 <MapPin className="size-4" />
                 {artist.location}
+              </p>
+            )}
+            {artist.created_at && (
+              <p className="text-sm text-muted-foreground">
+                Member since{" "}
+                {new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric" }).format(new Date(artist.created_at))}
               </p>
             )}
             {!isArtist && (artist.business_name || artist.business_type) && (
@@ -132,7 +223,7 @@ export function ProfileView({
             {isOwn ? (
               <>
                 <Link
-                  href="/profile/edit"
+                  href="/settings/profile"
                   className={`${pillClass} flex-1 bg-foreground text-background hover:bg-foreground/90`}
                 >
                   Edit profile
@@ -150,12 +241,18 @@ export function ProfileView({
               </>
             ) : (
               <>
-                <Link
-                  href={requestHref()}
-                  className={`${pillClass} flex-1 bg-foreground text-background hover:bg-foreground/90`}
-                >
-                  Request commission
-                </Link>
+                {open ? (
+                  <Link
+                    href={requestHref()}
+                    className={`${pillClass} flex-1 bg-foreground text-background hover:bg-foreground/90`}
+                  >
+                    Request commission
+                  </Link>
+                ) : (
+                  <span aria-disabled className={`${pillClass} flex-1 cursor-not-allowed bg-secondary text-muted-foreground`}>
+                    Commissions closed
+                  </span>
+                )}
                 {viewerId ? (
                   <MessageButton
                     userId={viewerId}
@@ -165,7 +262,7 @@ export function ProfileView({
                   />
                 ) : (
                   <Link
-                    href="/auth/login"
+                    href={loginHref(profileHref({ id, username: artist.username }))}
                     aria-label={`Message ${name}`}
                     title="Message"
                     className={circleClass}
@@ -179,6 +276,8 @@ export function ProfileView({
               </>
             )}
           </div>
+
+          {isOwn && isArtist && <SetupChecklist artist={artist} />}
 
           {artist.bio && (
             <p className="whitespace-pre-line text-sm leading-relaxed">{artist.bio}</p>
@@ -257,7 +356,7 @@ export function ProfileView({
               <div className="flex flex-col items-center gap-4 py-10 text-center text-muted-foreground">
                 <p>{isOwn ? "You haven't listed any services yet." : `${name} hasn't listed any services yet.`}</p>
                 {isOwn && (
-                  <Link href="/profile/edit#services" className={`${pillClass} bg-foreground text-background hover:bg-foreground/90`}>
+                  <Link href="/settings/profile#services" className={`${pillClass} bg-foreground text-background hover:bg-foreground/90`}>
                     <Plus className="size-4" />
                     Add services
                   </Link>
@@ -279,7 +378,7 @@ export function ProfileView({
                       ))}
                     {isOwn && (
                       <Link
-                        href="/profile/edit#services"
+                        href="/settings/profile#services"
                         className="ml-auto inline-flex h-9 items-center rounded-full bg-secondary px-4 text-sm font-semibold hover:bg-accent"
                       >
                         Edit services
@@ -299,10 +398,10 @@ export function ProfileView({
                           {categoryLabel(s.category)}
                         </h2>
                         <p className="text-lg tabular-nums text-muted-foreground">
-                          From {formatPrice(s.price_min, s.price_max, s.currency)}
+                          {s.price ? `From ${formatPrice(s.price.price_min, s.price.price_max, s.price.currency)}` : "Ask for a quote"}
                         </p>
                       </div>
-                      {!isOwn && !blocked && (
+                      {!isOwn && !blocked && open && (
                         <Link
                           href={requestHref(s.category)}
                           className={`${pillClass} shrink-0 border border-input hover:bg-secondary sm:min-w-48`}
