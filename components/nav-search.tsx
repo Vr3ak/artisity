@@ -42,7 +42,7 @@ export function NavSearch() {
         type="search"
         name="q"
         placeholder="Search"
-        aria-label="Search artists by name"
+        aria-label="Search artists"
         className="h-10 w-full rounded-full bg-secondary pl-10 pr-2 text-base text-secondary-foreground transition-colors placeholder:text-muted-foreground hover:bg-accent focus:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:pl-11 md:pr-4 md:text-sm"
       />
     </form>

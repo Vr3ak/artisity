@@ -91,7 +91,7 @@ export async function TopNav() {
             trigger={
               <button
                 type="button"
-                aria-label={withCount(accountLabel, counts.requests, "requests waiting on you")}
+                aria-label={withCount(accountLabel, counts.requests, "request waiting on you", "requests waiting on you")}
                 className="relative flex h-10 items-center gap-2 rounded-full bg-secondary pl-1.5 pr-3 transition-colors hover:bg-accent data-[state=open]:bg-accent"
               >
                 <CountBadge count={counts.requests} />
