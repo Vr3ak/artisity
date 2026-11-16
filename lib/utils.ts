@@ -170,5 +170,6 @@ export function clip(text: string | null | undefined, max = 160) {
 // "Messages, 2 unread": a nav badge's count, for the link's accessible name.
 // Here, not in tab-bar.tsx: the server-rendered TopNav calls it, and a "use client" module's
 // functions can't run on the server
-export const withCount = (label: string, count: number, noun: string) =>
-  count > 0 ? `${label}, ${count} ${noun}` : label;
+// `many` is the plural wording ("2 requests waiting on you"); it defaults to `one` for words like "unread"
+export const withCount = (label: string, count: number, one: string, many = one) =>
+  count > 0 ? `${label}, ${count} ${count === 1 ? one : many}` : label;
