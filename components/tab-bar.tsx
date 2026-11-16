@@ -119,7 +119,7 @@ export function TabBar({
           requests={requests}
           side="top"
           trigger={
-            <button type="button" aria-label={withCount(accountLabel, requests, "requests waiting on you")} className={tabClass}>
+            <button type="button" aria-label={withCount(accountLabel, requests, "request waiting on you", "requests waiting on you")} className={tabClass}>
               <Tab
                 active={accountActive}
                 icon={<Avatar url={avatarUrl} className="size-6" />}
