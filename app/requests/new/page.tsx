@@ -34,7 +34,7 @@ async function NewRequest({
   // Closed: say so up front (the requests insert policy would reject the send anyway)
   if (!artist.commissions_open)
     return (
-      <div className="flex flex-col items-center gap-4 rounded-3xl bg-card p-8 text-center sm:p-10">
+      <div className="flex flex-col items-center gap-4 rounded-3xl bg-card p-8 text-center shadow-card sm:p-10">
         <h1 className="text-2xl font-bold tracking-tight">
           {artist.display_name ?? "This artist"} isn&apos;t taking commissions right now
         </h1>

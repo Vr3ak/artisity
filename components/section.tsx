@@ -12,7 +12,7 @@ export function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} className="flex scroll-mt-24 flex-col gap-6 rounded-3xl bg-nav p-6 sm:p-8">
+    <section id={id} className="flex scroll-mt-24 flex-col gap-6 rounded-3xl bg-nav p-6 shadow-card sm:p-8">
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
         {description && (

@@ -47,7 +47,7 @@ export default function RootLayout({
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }}
         />
-        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 bg-background px-4 md:px-6">
+        <header className="nav-scroll-shadow sticky top-0 z-10 flex h-16 items-center gap-4 bg-background px-4 md:px-6">
           <Suspense fallback={<TopNavSkeleton />}>
             <TopNav />
           </Suspense>

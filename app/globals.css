@@ -44,6 +44,10 @@
     --chart-5: 33 100% 15%;
     --radius: 0.5rem;
     --shadow: 0 0% 0% / 0.6;
+    /* Depth (shadow-card / shadow-raised): dark surfaces barely differ in lightness, so cards get a
+       cream top edge catching the light plus a soft offset shadow below */
+    --shadow-soft: 0 0% 0% / 0.35;
+    --highlight: 46 87% 82% / 0.07;
     --scrim: 0 3% 8% / 0.75; /* behind modals */
     --online: 142 69% 58%; /* #4ADE80, "Active now" dot */
   }
@@ -72,6 +76,8 @@
     --input: 38 28% 45%; /* 3.6:1 */
     --ring: 33 100% 15%;
     --shadow: 30 60% 20% / 0.18;
+    --shadow-soft: 30 60% 20% / 0.08;
+    --highlight: 0 0% 100% / 0.8;
     --scrim: 33 100% 10% / 0.45;
     --online: 142 72% 29%; /* #15803D, 4.4:1 on background */
   }
@@ -98,4 +104,17 @@
 @keyframes hero-progress {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
+}
+
+/* The sticky top bar shares the page background, so once content slides under it a shadow marks
+   the edge. Scroll-driven (no JS); browsers without animation-timeline keep the flat bar. */
+@supports (animation-timeline: scroll()) {
+  .nav-scroll-shadow {
+    animation: nav-scroll-shadow linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 48px;
+  }
+}
+@keyframes nav-scroll-shadow {
+  to { box-shadow: 0 1px 0 0 hsl(var(--border)), 0 10px 24px -14px hsl(var(--shadow)); }
 }

@@ -82,14 +82,14 @@ export function RequestForm({
           {artistName} will accept or decline. You can keep talking in chat either way.
         </p>
       </div>
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6 rounded-3xl bg-nav p-6 sm:p-8">
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6 rounded-3xl bg-nav p-6 shadow-card sm:p-8">
         <Field
           label="Service"
           hint={
             price ? (
               <>
                 {artistName} usually charges{" "}
-                <span className="font-semibold tabular-nums text-foreground">
+                <span className="font-semibold tabular-nums text-primary-ink">
                   {formatPrice(price.price_min, price.price_max, price.currency)}
                 </span>{" "}
                 for this.

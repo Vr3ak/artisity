@@ -47,7 +47,7 @@ async function ArtistGrid({
         bleed="-mx-4 px-4"
       />
       {artists.length === 0 ? (
-        <div className="flex flex-col items-start gap-4 rounded-3xl bg-card p-6">
+        <div className="flex flex-col items-start gap-4 rounded-3xl bg-card p-6 shadow-card">
           <p className="text-muted-foreground">
             {q
               ? `No artists match “${q}”. Try part of their name or @username.`
@@ -74,7 +74,7 @@ async function ArtistGrid({
               <li key={a.id}>
                 <Link
                   href={profileHref(a)}
-                  className="flex h-full flex-col gap-4 rounded-3xl bg-card p-5 transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex h-full flex-col gap-4 rounded-3xl bg-card p-5 shadow-card transition-[background-color,box-shadow,transform] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-raised motion-reduce:transition-none motion-reduce:hover:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <div className="flex items-center gap-3">
                     <div className="size-14 shrink-0 overflow-hidden rounded-full bg-secondary">
@@ -112,7 +112,7 @@ async function ArtistGrid({
                     from && (
                       <p className="mt-auto text-sm text-muted-foreground">
                         From{" "}
-                        <span className="font-semibold tabular-nums text-foreground">
+                        <span className="font-semibold tabular-nums text-primary-ink">
                           {formatPrice(from.price_min, from.price_min, from.currency)}
                         </span>
                       </p>

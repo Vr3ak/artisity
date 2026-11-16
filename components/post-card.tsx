@@ -57,7 +57,7 @@ export function PostCard({ card, liked, viewerId }: { card: Card; liked: boolean
         href={href}
         className="flex flex-col gap-2 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background"
       >
-        <div className="relative overflow-hidden rounded-2xl bg-muted">
+        <div className="relative overflow-hidden rounded-2xl bg-muted shadow-card transition-shadow duration-200 ease-out group-hover/card:shadow-raised motion-reduce:transition-none">
           {/* An invisible copy of the cover gives the card the artwork's own shape (same URL, one
               request); the carousel fills that box. Capped so very tall or wide pieces crop. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -85,8 +85,9 @@ export function PostCard({ card, liked, viewerId }: { card: Card; liked: boolean
               <span className="truncate">{artist.display_name}</span>
             </span>
             {service && (
-              <span className="shrink-0 font-semibold tabular-nums">
-                From {formatPrice(service.price_min, service.price_min, service.currency)}
+              <span className="shrink-0 font-semibold tabular-nums text-primary-ink">
+                <span className="font-normal text-muted-foreground">From</span>{" "}
+                {formatPrice(service.price_min, service.price_min, service.currency)}
               </span>
             )}
           </div>

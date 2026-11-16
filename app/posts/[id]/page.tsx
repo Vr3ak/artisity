@@ -58,7 +58,7 @@ async function Post({ params }: { params: Promise<{ id: string }> }) {
       type="button"
       data-lightbox={i}
       aria-label={`View ${imagePaths.length > 1 ? `image ${i + 1}` : "image"} full screen`}
-      className="block w-full cursor-zoom-in overflow-hidden rounded-3xl bg-secondary outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background md:col-start-1"
+      className="block w-full cursor-zoom-in overflow-hidden rounded-3xl bg-secondary shadow-card outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background md:col-start-1"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
